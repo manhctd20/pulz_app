@@ -22,7 +22,8 @@ void i18n.use(initReactI18next).init({
   },
   lng: initialLang,
   fallbackLng: 'vi',
-  compatibilityJSON: 'v4',
+  // Hermes (iOS engine) chưa support đầy đủ Intl.PluralRules → dùng compat v3 format
+  compatibilityJSON: 'v3',
   interpolation: {
     escapeValue: false,
   },

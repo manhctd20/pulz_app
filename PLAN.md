@@ -18,7 +18,11 @@
 | Group Detail: rename modal (owner) + long-press kick member | ✅ Hoàn thành |
 | Habit Stats heatmap `app/habit/[id].tsx` (3 stat card + 30-day grid 7-col) | ✅ Hoàn thành |
 | Push notification reminder (`expo-notifications`, daily local) | ✅ Hoàn thành |
-| **Light theme** — Dark / Light / System cycle, persist qua zustand, mutation trick cho Typography colors | ✅ Hoàn thành |
+| **Light theme** — Dark / Light / System cycle, persist qua zustand | ✅ Hoàn thành |
+| Polish: pull-to-refresh, haptic feedback, skeleton loading, empty state illustration | ✅ Hoàn thành |
+| FloatingTabBar dot animation (built-in `Animated.spring`, không phụ thuộc Reanimated) | ✅ Hoàn thành |
+| HabitCard tinted theo `habit.color` (helper `hexToRgba` 0.18/0.5 cho bg/border) | ✅ Hoàn thành |
+| Typography getter pattern + setTypographyScheme subscription (tránh RN dev freeze mutation) | ✅ Hoàn thành |
 | `npm install` (954 packages) | ✅ exit 0 |
 | `npx tsc --noEmit` | ✅ pass |
 | `npx expo config` | ✅ parse OK |

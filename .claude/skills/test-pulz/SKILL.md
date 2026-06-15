@@ -194,6 +194,13 @@ Expect: exit code 0.
 
 Cũng chạy `npm run typecheck -w @pulz/api` và `npm run typecheck -w @pulz/shared`.
 
+### Mobile native gotchas (info, không fail skill)
+
+- **IP LAN**: `apps/mobile/.env` `EXPO_PUBLIC_API_URL` phải khớp IP wifi PC. Đổi IP → restart Metro với `--clear` (env inline build-time). Set `$env:REACT_NATIVE_PACKAGER_HOSTNAME` trước khi start nếu Metro vẫn ra `127.0.0.1`.
+- **Firewall port 3000**: API bind `0.0.0.0:3000` nhưng Windows firewall mặc định block. Mở 1 lần (Admin): `New-NetFirewallRule -DisplayName "PulzApp API" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow`.
+- **Reanimated 4 + Expo Go**: phải dùng built-in `Animated` API thay vì reanimated (Expo Go không có TurboModule worklets). Babel plugin reanimated đã được gỡ.
+- **RN dev freeze Typography**: Typography phải là getter object, KHÔNG mutate trực tiếp. Theme switch update qua `setTypographyScheme(scheme)`.
+
 ---
 
 ## Security battery — skip nếu `--quick`

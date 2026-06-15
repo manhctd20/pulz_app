@@ -1,12 +1,11 @@
-import { useEffect } from 'react';
-import { StyleProp, View, ViewStyle } from 'react-native';
-import Animated, {
+import { useEffect, useRef } from 'react';
+import {
+  Animated,
   Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+  StyleProp,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { useColors } from '../lib/theme';
 
@@ -19,17 +18,28 @@ type Props = {
 
 export function Skeleton({ width = '100%', height = 14, radius = 6, style }: Props) {
   const colors = useColors();
-  const opacity = useSharedValue(0.55);
+  const opacity = useRef(new Animated.Value(0.55)).current;
 
   useEffect(() => {
-    opacity.value = withRepeat(
-      withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.55,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
     );
+    loop.start();
+    return () => loop.stop();
   }, [opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
     <Animated.View
@@ -39,8 +49,8 @@ export function Skeleton({ width = '100%', height = 14, radius = 6, style }: Pro
           height,
           borderRadius: radius,
           backgroundColor: colors.surface.high,
+          opacity,
         },
-        animatedStyle,
         style,
       ]}
     />

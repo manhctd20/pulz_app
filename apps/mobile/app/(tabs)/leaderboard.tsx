@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LeaderboardEntry, LeaderboardPeriod } from '@pulz/shared';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -25,11 +25,14 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 const PERIODS: LeaderboardPeriod[] = ['today', 'week', 'all'];
 
+const MEDAL = ['🥇', '🥈', '🥉'] as const;
+
 export default function LeaderboardScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const groupsQuery = useGroups();
+  const me = useAuthStore((s) => s.user);
   const [period, setPeriod] = useState<LeaderboardPeriod>('week');
   const [activeGroupIdx, setActiveGroupIdx] = useState(0);
 
@@ -43,8 +46,7 @@ export default function LeaderboardScreen() {
         <View style={[styles.scrollContent, { gap: Spacing.lg }]}>
           <Skeleton width={180 as number} height={28} radius={8} />
           <Skeleton height={48} radius={Radius.full} />
-          <Skeleton height={200} radius={Radius.lg} />
-          <Skeleton height={56} radius={Radius.lg} />
+          <Skeleton height={220} radius={Radius.lg} />
           <Skeleton height={56} radius={Radius.lg} />
         </View>
       </SafeAreaView>
@@ -67,6 +69,9 @@ export default function LeaderboardScreen() {
   const entries = lbQuery.data?.entries ?? [];
   const top3 = entries.slice(0, 3);
   const rest = entries.slice(3);
+  const myEntry = entries.find((e) => e.userId === me?.id);
+  const leaderPoints = entries[0]?.totalCheckIns ?? 0;
+  const totalCheckIns = entries.reduce((sum, e) => sum + e.totalCheckIns, 0);
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -84,9 +89,21 @@ export default function LeaderboardScreen() {
           />
         }
       >
+        {/* HEADER */}
         <View>
           <Text style={Typography.headline}>{t('leaderboard.title')}</Text>
-          {groups.length > 1 ? (
+          <View style={styles.metaRow}>
+            <View style={styles.groupChipMain}>
+              <Ionicons name="people" size={12} color={colors.primaryLight} />
+              <Text style={[Typography.label, { color: colors.primaryLight }]}>
+                {activeGroup.name}
+              </Text>
+            </View>
+            <Text style={[Typography.bodySm, { color: colors.text.muted }]}>
+              {t('leaderboard.memberCountChip', { count: activeGroup.memberCount })}
+            </Text>
+          </View>
+          {groups.length > 1 && (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -112,13 +129,10 @@ export default function LeaderboardScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-          ) : (
-            <Text style={[Typography.bodySm, { color: colors.text.muted, marginTop: 4 }]}>
-              {activeGroup.name} · {t('groups.memberCount', { count: activeGroup.memberCount })}
-            </Text>
           )}
         </View>
 
+        {/* PERIOD SEGMENT */}
         <View style={styles.segment}>
           {PERIODS.map((p) => (
             <Pressable
@@ -130,10 +144,7 @@ export default function LeaderboardScreen() {
               style={[styles.segmentBtn, period === p && styles.segmentBtnActive]}
             >
               <Text
-                style={[
-                  styles.segmentText,
-                  period === p && styles.segmentTextActive,
-                ]}
+                style={[styles.segmentText, period === p && styles.segmentTextActive]}
               >
                 {t(`leaderboard.period${capitalize(p)}`)}
               </Text>
@@ -141,15 +152,60 @@ export default function LeaderboardScreen() {
           ))}
         </View>
 
-        {lbQuery.isLoading ? (
-          <ActivityIndicator color={colors.primaryLight} />
+        {/* YOUR RANK HERO */}
+        {myEntry && totalCheckIns > 0 && (
+          <View style={styles.yourRankWrap}>
+            <LinearGradient
+              colors={[colors.primary + '38', colors.secondary + '20']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View style={styles.yourRankBadge}>
+              <Text style={styles.yourRankNumber}>#{myEntry.rank}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[Typography.label, { color: colors.text.muted }]}>
+                {t('leaderboard.yourRankTitle')}
+              </Text>
+              <Text style={[Typography.title, { marginTop: 2 }]}>
+                {t('leaderboard.points', { count: myEntry.totalCheckIns })}
+              </Text>
+              <Text style={[Typography.bodySm, { color: colors.text.secondary, marginTop: 2 }]}>
+                {myEntry.rank === 1
+                  ? t('leaderboard.youAreLeader')
+                  : t('leaderboard.behindLeader', {
+                      gap: leaderPoints - myEntry.totalCheckIns,
+                    })}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {totalCheckIns === 0 ? (
+          <EmptyState
+            icon="trophy-outline"
+            emoji="✨"
+            title={t('leaderboard.noActivityTitle')}
+            subtitle={t('leaderboard.noActivitySub')}
+          />
         ) : (
           <>
-            <Podium entries={top3} />
+            {/* PODIUM */}
+            <Podium entries={top3} styles={styles} colors={colors} t={t} />
+
+            {/* REST */}
             {rest.length > 0 && (
               <View style={styles.list}>
                 {rest.map((e) => (
-                  <RankRow key={e.userId} entry={e} />
+                  <RankRow
+                    key={e.userId}
+                    entry={e}
+                    isMe={me?.id === e.userId}
+                    styles={styles}
+                    colors={colors}
+                    t={t}
+                  />
                 ))}
               </View>
             )}
@@ -160,51 +216,70 @@ export default function LeaderboardScreen() {
   );
 }
 
-function Podium({ entries }: { entries: LeaderboardEntry[] }) {
-  const { t } = useTranslation();
-  const colors = useColors();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+function Podium({
+  entries,
+  styles,
+  colors,
+  t,
+}: {
+  entries: LeaderboardEntry[];
+  styles: ReturnType<typeof makeStyles>;
+  colors: ColorPalette;
+  t: (key: string, opts?: any) => string;
+}) {
   if (entries.length === 0) return null;
-  const order = [entries[1], entries[0], entries[2]].filter(Boolean) as LeaderboardEntry[];
-  const heights = [110, 140, 90];
+  // Visual order: 2nd left, 1st middle, 3rd right
+  const slots = [entries[1], entries[0], entries[2]];
+
+  const PODIUM_HEIGHTS = [110, 150, 90];
+  const PODIUM_GRADIENT: Array<[string, string]> = [
+    ['rgba(192, 192, 192, 0.35)', 'rgba(192, 192, 192, 0.08)'], // silver
+    [colors.primary + '60', colors.primaryContainer + '30'], // gold-ish (use brand)
+    ['rgba(205, 127, 50, 0.35)', 'rgba(205, 127, 50, 0.08)'], // bronze
+  ];
 
   return (
     <View style={styles.podium}>
-      {order.map((e, i) => {
-        const realIdx = i === 0 ? 1 : i === 1 ? 0 : 2;
+      {slots.map((e, slotIdx) => {
+        if (!e) return <View key={`slot-${slotIdx}`} style={styles.podiumCol} />;
+        const realRank = slotIdx === 0 ? 1 : slotIdx === 1 ? 0 : 2; // index in MEDAL/gradient
+        const isFirst = realRank === 0;
         return (
           <View key={e.userId} style={styles.podiumCol}>
-            <View style={styles.podiumAvatar}>
-              <Text style={styles.podiumInitial}>
-                {e.displayName.slice(0, 1).toUpperCase()}
-              </Text>
-              {realIdx === 0 && (
-                <View style={styles.crown}>
-                  <Ionicons name="star" size={14} color="#FFF" />
-                </View>
-              )}
+            <View style={[styles.podiumAvatar, isFirst && styles.podiumAvatarFirst]}>
+              <LinearGradient
+                colors={[colors.primary, colors.primaryContainer]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.podiumAvatarInner, isFirst && styles.podiumAvatarInnerFirst]}
+              >
+                <Text style={[styles.podiumInitial, isFirst && styles.podiumInitialFirst]}>
+                  {e.displayName.slice(0, 1).toUpperCase()}
+                </Text>
+              </LinearGradient>
+              <View style={[styles.medalBadge, isFirst && styles.medalBadgeFirst]}>
+                <Text style={styles.medalEmoji}>{MEDAL[realRank]}</Text>
+              </View>
             </View>
-            <Text style={Typography.bodyLgMedium} numberOfLines={1}>
+            <Text style={[Typography.bodyLgMedium, styles.podiumName]} numberOfLines={1}>
               {e.displayName}
             </Text>
-            <Text style={[Typography.label, { color: colors.primaryLight }]}>
+            <Text style={[Typography.label, { color: colors.primaryLight, marginTop: 2 }]}>
               {t('leaderboard.points', { count: e.totalCheckIns })}
             </Text>
             <View
               style={[
                 styles.podiumBar,
-                {
-                  height: heights[i],
-                  backgroundColor:
-                    realIdx === 0
-                      ? colors.primary
-                      : realIdx === 1
-                        ? colors.surface.highest
-                        : colors.surface.high,
-                },
+                { height: PODIUM_HEIGHTS[slotIdx], marginTop: Spacing.sm },
               ]}
             >
-              <Text style={styles.podiumRank}>{realIdx + 1}</Text>
+              <LinearGradient
+                colors={PODIUM_GRADIENT[realRank]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              <Text style={styles.podiumRankNumber}>{realRank + 1}</Text>
             </View>
           </View>
         );
@@ -213,21 +288,28 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
   );
 }
 
-function RankRow({ entry }: { entry: LeaderboardEntry }) {
-  const { t } = useTranslation();
-  const me = useAuthStore((s) => s.user);
-  const colors = useColors();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const isMe = me?.id === entry.userId;
+function RankRow({
+  entry,
+  isMe,
+  styles,
+  colors,
+  t,
+}: {
+  entry: LeaderboardEntry;
+  isMe: boolean;
+  styles: ReturnType<typeof makeStyles>;
+  colors: ColorPalette;
+  t: (key: string, opts?: any) => string;
+}) {
   return (
     <View style={[styles.row, isMe && styles.rowMe]}>
       <Text style={[Typography.label, styles.rank]}>#{entry.rank}</Text>
       <View style={styles.avatar}>
         <Text style={styles.avatarInitial}>{entry.displayName.slice(0, 1).toUpperCase()}</Text>
       </View>
-      <Text style={[Typography.bodyLgMedium, { flex: 1 }]}>
+      <Text style={[Typography.bodyLgMedium, { flex: 1 }]} numberOfLines={1}>
         {entry.displayName}
-        {isMe ? ` (${t('leaderboard.youLabel')})` : ''}
+        {isMe ? ` · ${t('leaderboard.youLabel')}` : ''}
       </Text>
       <Text style={[Typography.label, { color: colors.primaryLight }]}>
         {t('leaderboard.points', { count: entry.totalCheckIns })}
@@ -249,15 +331,22 @@ function makeStyles(c: ColorPalette) {
       paddingBottom: 140,
       gap: Spacing.lg,
     },
-    empty: {
-      flex: 1,
+    // HEADER
+    metaRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: 120,
       gap: Spacing.sm,
-      paddingHorizontal: Spacing.screen,
+      marginTop: Spacing.xs,
     },
-    emptySub: { color: c.text.muted, textAlign: 'center' },
+    groupChipMain: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: 'rgba(127, 119, 221, 0.15)',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: Radius.full,
+    },
     groupTabs: { gap: Spacing.sm, paddingTop: Spacing.sm },
     groupChip: {
       paddingHorizontal: Spacing.base,
@@ -265,13 +354,14 @@ function makeStyles(c: ColorPalette) {
       borderRadius: Radius.full,
       backgroundColor: c.surface.container,
     },
-    groupChipActive: { backgroundColor: 'rgba(127,119,221,0.18)' },
+    groupChipActive: { backgroundColor: 'rgba(127,119,221,0.22)' },
     groupChipText: {
       fontFamily: FontFamily.manrope.semibold,
       color: c.text.muted,
       fontSize: 13,
     },
     groupChipTextActive: { color: c.primaryLight },
+    // SEGMENT
     segment: {
       flexDirection: 'row',
       backgroundColor: c.surface.container,
@@ -291,54 +381,107 @@ function makeStyles(c: ColorPalette) {
       fontSize: 13,
     },
     segmentTextActive: { color: '#FFFFFF' },
+    // YOUR RANK HERO
+    yourRankWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.base,
+      backgroundColor: c.surface.container,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(127, 119, 221, 0.35)',
+    },
+    yourRankBadge: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    yourRankNumber: {
+      fontFamily: FontFamily.manrope.extrabold,
+      fontSize: 20,
+      color: '#FFFFFF',
+    },
+    // PODIUM
     podium: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'space-around',
-      paddingVertical: Spacing.base,
+      paddingTop: Spacing.lg,
     },
     podiumCol: {
       alignItems: 'center',
-      gap: Spacing.xs,
       flex: 1,
     },
     podiumAvatar: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: c.primaryContainer,
+      position: 'relative',
+      marginBottom: Spacing.sm,
+    },
+    podiumAvatarFirst: { marginBottom: Spacing.md },
+    podiumAvatarInner: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    podiumAvatarInnerFirst: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+      shadowColor: c.primary,
+      shadowOpacity: 0.55,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 8,
     },
     podiumInitial: {
-      fontFamily: FontFamily.manrope.bold,
-      fontSize: 24,
+      fontFamily: FontFamily.manrope.extrabold,
+      fontSize: 22,
       color: '#FFFFFF',
     },
-    crown: {
+    podiumInitialFirst: { fontSize: 28 },
+    medalBadge: {
       position: 'absolute',
-      top: -8,
+      top: -6,
       right: -4,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: c.tertiary,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: c.surface.lowest,
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: c.surface.container,
     },
+    medalBadgeFirst: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      top: -10,
+    },
+    medalEmoji: { fontSize: 16 },
+    podiumName: { textAlign: 'center', maxWidth: 90 },
     podiumBar: {
       width: '100%',
       borderTopLeftRadius: Radius.md,
       borderTopRightRadius: Radius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: Spacing.xs,
+      overflow: 'hidden',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderColor: c.glass.border,
     },
-    podiumRank: {
+    podiumRankNumber: {
       fontFamily: FontFamily.manrope.extrabold,
-      fontSize: 24,
-      color: '#FFFFFF',
+      fontSize: 28,
+      color: c.text.primary,
     },
+    // LIST
     list: { gap: Spacing.sm },
     row: {
       flexDirection: 'row',
@@ -350,8 +493,9 @@ function makeStyles(c: ColorPalette) {
       borderRadius: Radius.lg,
     },
     rowMe: {
-      borderWidth: 1,
-      borderColor: 'rgba(127,119,221,0.4)',
+      borderWidth: 1.5,
+      borderColor: 'rgba(127,119,221,0.55)',
+      backgroundColor: 'rgba(127, 119, 221, 0.12)',
     },
     rank: {
       minWidth: 32,

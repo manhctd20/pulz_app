@@ -18,7 +18,7 @@ export function GlassCard({ children, style, intensity = 20 }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={[styles.shadow, style]}>
-      <BlurView intensity={intensity} tint={scheme} style={styles.blur}>
+      <BlurView key={scheme} intensity={intensity} tint={scheme} style={styles.blur}>
         <View style={styles.overlay}>{children}</View>
       </BlurView>
     </View>

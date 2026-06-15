@@ -3,13 +3,15 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  LayoutChangeEvent,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ColorPalette } from '../constants/colors';
@@ -34,20 +36,22 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [tabWidth, setTabWidth] = useState(0);
-  const dotX = useSharedValue(0);
+  const dotX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (tabWidth === 0) return;
     const target = state.index * tabWidth + tabWidth / 2 - 2;
-    dotX.value = withSpring(target, { damping: 18, stiffness: 200, mass: 0.6 });
+    Animated.spring(dotX, {
+      toValue: target,
+      damping: 18,
+      stiffness: 200,
+      mass: 0.6,
+      useNativeDriver: true,
+    }).start();
   }, [state.index, tabWidth, dotX]);
 
-  const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: dotX.value }],
-  }));
-
   const onPillLayout = (e: LayoutChangeEvent) => {
-    const total = e.nativeEvent.layout.width - 18; // trừ paddingHorizontal 9*2
+    const total = e.nativeEvent.layout.width - 18; // paddingHorizontal 9*2
     setTabWidth(total / state.routes.length);
   };
 
@@ -58,7 +62,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
     >
       <View style={styles.row}>
         <View style={styles.pillShadow}>
-          <BlurView intensity={40} tint={scheme} style={styles.pill}>
+          <BlurView key={scheme} intensity={40} tint={scheme} style={styles.pill}>
             <View style={styles.pillOverlay} onLayout={onPillLayout}>
               {state.routes.map((route, index) => {
                 const isFocused = state.index === index;
@@ -95,7 +99,10 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 );
               })}
               {tabWidth > 0 && (
-                <Animated.View style={[styles.dot, dotStyle]} pointerEvents="none" />
+                <Animated.View
+                  style={[styles.dot, { transform: [{ translateX: dotX }] }]}
+                  pointerEvents="none"
+                />
               )}
             </View>
           </BlurView>
@@ -126,16 +133,8 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
 function makeStyles(c: ColorPalette) {
   return StyleSheet.create({
-    wrapper: {
-      position: 'absolute',
-      left: 14,
-      right: 14,
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
+    wrapper: { position: 'absolute', left: 14, right: 14 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     pillShadow: {
       flex: 1,
       borderRadius: Radius.full,

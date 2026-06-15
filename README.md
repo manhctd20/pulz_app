@@ -419,6 +419,7 @@ npx tsx prisma\seed.ts
 - **Stats heatmap 30 ngày**: màn `/habit/[id]` với 3 stat card (streak hiện tại / dài nhất / tổng ngày done) + heatmap grid 7-col đánh dấu ngày done teal vs pending dim
 - **Push notification reminder**: `expo-notifications` schedule daily local notification theo `reminderTime` HH:mm của từng habit, auto-sync khi habits thay đổi, permission request lần đầu
 - **Light theme**: cycle Dark / Light / System trong Profile → Theme row. Status bar style + tất cả surface + text invert đúng. System mode tự follow OS color scheme
+- **Polish UX**: pull-to-refresh trên Home/Groups/Leaderboard (RefreshControl + haptic tap); haptic feedback (tap/success/selection) cho check-in, tab switch, FAB, segment, modal; skeleton shimmer thay ActivityIndicator (HabitCardSkeleton/GroupCardSkeleton); EmptyState với gradient circle + emoji/icon ở 3 màn trống; FloatingTabBar dot animation slide spring; habit `color` tint vào HabitCard iconBox
 
 ### ⏳ Next (đề xuất, chưa cam kết)
 - **Avatar upload** (BE: presigned S3 URL hoặc Cloudinary; FE: image picker)

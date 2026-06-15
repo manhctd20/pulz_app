@@ -102,7 +102,14 @@
     "periodWeek": "Tuần này",
     "periodAll": "Tất cả",
     "points": "{{count}} điểm",
-    "youLabel": "Bạn"
+    "youLabel": "Bạn",
+    "yourRankTitle": "Hạng của bạn",
+    "yourRankSub": "#{{rank}} · {{points}} điểm",
+    "behindLeader": "Cách dẫn đầu {{gap}} điểm",
+    "youAreLeader": "Bạn đang dẫn đầu! 🎉",
+    "noActivityTitle": "Chưa có hoạt động",
+    "noActivitySub": "Check-in habit để xuất hiện trên bảng xếp hạng",
+    "memberCountChip": "{{count}} thành viên"
   },
   "onboarding": {
     "title": "Cùng nhau giữ thói quen tốt",
@@ -122,6 +129,9 @@
     "achievementHabit5": "Đủ 5 thói quen",
     "achievementGroup": "Tham gia nhóm đầu tiên",
     "achievementLocked": "Đang khoá",
+    "longestStreakLabel": "Streak dài nhất",
+    "longestStreakUnit": "ngày",
+    "achievementProgress": "{{done}}/{{total}} mở khoá",
     "settingsTitle": "Cài đặt",
     "settingNotifications": "Thông báo",
     "settingTheme": "Giao diện",

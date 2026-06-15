@@ -1,42 +1,11 @@
-import { useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Appearance } from 'react-native';
 
 import { ColorPalette, ColorScheme, DarkColors, LightColors } from '../constants/colors';
-import { Typography } from '../constants/typography';
+import { setTypographyScheme } from '../constants/typography';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
-
-let lastSyncedScheme: ColorScheme | null = null;
-
-function syncTypography(colors: ColorPalette) {
-  // Đồng bộ inline Typography.X.color để mọi Text dùng Typography pick up
-  // màu mới ngay ở render đầu tiên (không cần useEffect chậm 1 frame).
-  if (lastSyncedScheme === colors.scheme) return;
-  lastSyncedScheme = colors.scheme;
-  Object.assign(Typography.display, { color: colors.text.primary });
-  Object.assign(Typography.headline, { color: colors.text.primary });
-  Object.assign(Typography.title, { color: colors.text.primary });
-  Object.assign(Typography.bodyLg, { color: colors.text.primary });
-  Object.assign(Typography.bodyLgMedium, { color: colors.text.primary });
-  Object.assign(Typography.bodySm, { color: colors.text.secondary });
-  Object.assign(Typography.label, { color: colors.text.primary });
-  Object.assign(Typography.number, { color: colors.text.primary });
-}
-
-export function useColors(): ColorPalette {
-  const pref = useSettingsStore((s) => s.theme);
-  const system = useColorScheme();
-  const resolved = resolveScheme(pref, system);
-  const colors = resolved === 'light' ? LightColors : DarkColors;
-  syncTypography(colors);
-  return colors;
-}
-
-export function useScheme(): ColorScheme {
-  const pref = useSettingsStore((s) => s.theme);
-  const system = useColorScheme();
-  return resolveScheme(pref, system);
-}
 
 function resolveScheme(
   pref: ThemePreference,
@@ -44,4 +13,46 @@ function resolveScheme(
 ): ColorScheme {
   if (pref === 'system') return system === 'light' ? 'light' : 'dark';
   return pref;
+}
+
+// Khởi tạo 1 lần ở module-load — sync Typography theo state hiện tại.
+const initialPref = useSettingsStore.getState().theme;
+const initialSystem = Appearance.getColorScheme();
+setTypographyScheme(resolveScheme(initialPref, initialSystem));
+
+// Subscribe ngoài React lifecycle: khi pref đổi → update typography scheme ngay.
+useSettingsStore.subscribe((state, prev) => {
+  if (state.theme === prev.theme) return;
+  setTypographyScheme(resolveScheme(state.theme, Appearance.getColorScheme()));
+});
+
+// Lắng nghe OS color scheme cho mode 'system'.
+Appearance.addChangeListener(({ colorScheme }) => {
+  const pref = useSettingsStore.getState().theme;
+  if (pref !== 'system') return;
+  setTypographyScheme(resolveScheme(pref, colorScheme));
+});
+
+/**
+ * useColors: trả về palette hiện tại + tự re-render khi pref/system đổi.
+ * Typography getter tự đọc current scheme — không cần mutate object frozen.
+ */
+export function useColors(): ColorPalette {
+  const scheme = useScheme();
+  return scheme === 'light' ? LightColors : DarkColors;
+}
+
+export function useScheme(): ColorScheme {
+  const pref = useSettingsStore((s) => s.theme);
+  const [system, setSystem] = useState<'light' | 'dark' | null | undefined>(() =>
+    Appearance.getColorScheme(),
+  );
+
+  useEffect(() => {
+    if (pref !== 'system') return;
+    const sub = Appearance.addChangeListener(({ colorScheme }) => setSystem(colorScheme));
+    return () => sub.remove();
+  }, [pref]);
+
+  return resolveScheme(pref, system);
 }

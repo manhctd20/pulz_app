@@ -14,7 +14,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -55,6 +55,44 @@ function AuthGate() {
   return null;
 }
 
+function ThemedShell() {
+  const colors = useColors();
+  const scheme = useScheme();
+
+  // Memo theo giá trị màu (string) chứ không phải object để identity ổn định khi
+  // theme không đổi, tránh expo-router rebuild navigator khi parent re-render.
+  const screenOptions = useMemo(
+    () => ({
+      headerShown: false as const,
+      contentStyle: { backgroundColor: colors.surface.lowest },
+    }),
+    [colors.surface.lowest],
+  );
+
+  const rootStyle = useMemo(
+    () => ({ flex: 1, backgroundColor: colors.surface.lowest }),
+    [colors.surface.lowest],
+  );
+
+  return (
+    <GestureHandlerRootView style={rootStyle}>
+      <SafeAreaProvider>
+        <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
+        <AuthGate />
+        <Stack screenOptions={screenOptions}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="group/[id]" />
+          <Stack.Screen name="habit/[id]" />
+        </Stack>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Manrope_500Medium,
@@ -66,9 +104,6 @@ export default function RootLayout() {
     BeVietnamPro_600SemiBold,
   });
 
-  const colors = useColors();
-  const scheme = useScheme();
-
   useEffect(() => {
     if (fontsLoaded || fontError) {
       void SplashScreen.hideAsync();
@@ -79,26 +114,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface.lowest }}>
-        <SafeAreaProvider>
-          <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
-          <AuthGate />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.surface.lowest },
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="login" />
-            <Stack.Screen name="register" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="group/[id]" />
-            <Stack.Screen name="habit/[id]" />
-          </Stack>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
+      <ThemedShell />
     </QueryClientProvider>
   );
 }

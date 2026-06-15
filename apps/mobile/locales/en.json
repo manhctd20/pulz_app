@@ -102,7 +102,14 @@
     "periodWeek": "This week",
     "periodAll": "All time",
     "points": "{{count}} pts",
-    "youLabel": "You"
+    "youLabel": "You",
+    "yourRankTitle": "Your rank",
+    "yourRankSub": "#{{rank}} · {{points}} pts",
+    "behindLeader": "{{gap}} pts behind leader",
+    "youAreLeader": "You're leading! 🎉",
+    "noActivityTitle": "No activity yet",
+    "noActivitySub": "Check in habits to appear on the leaderboard",
+    "memberCountChip": "{{count}} members"
   },
   "onboarding": {
     "title": "Build good habits together",
@@ -122,6 +129,9 @@
     "achievementHabit5": "5 habits",
     "achievementGroup": "First group joined",
     "achievementLocked": "Locked",
+    "longestStreakLabel": "Longest streak",
+    "longestStreakUnit": "days",
+    "achievementProgress": "{{done}}/{{total}} unlocked",
     "settingsTitle": "Settings",
     "settingNotifications": "Notifications",
     "settingTheme": "Theme",

@@ -26,6 +26,13 @@
 | 15 | Tap Theme setting | ✅ Cycle Dark → Light → System; icon đổi (moon → sunny → phone), label đổi; mọi surface + text invert đúng; persist qua reload |
 | 16 | Light mode rendering | ✅ Nền trắng, text dark, cards `#FFFFFF`, dividers grey nhạt, brand colors (tím/teal/coral) giữ nguyên, contrast OK |
 | 17 | Status bar style theo theme | ✅ Dark theme → status bar `light`; Light/System(light) → `dark` |
+| 18 | Pull-to-refresh Home/Groups/Leaderboard | ✅ Pull xuống trigger haptic tap + spinner + refetch + reload data |
+| 19 | Haptic feedback (iPhone only) | ✅ Tap check-in (success/tap), tab switch (selection), FAB (tap), segment/chip (selection), modal open (selection) |
+| 20 | Skeleton loading | ✅ HabitCardSkeleton x3 trên Home, GroupCardSkeleton x2 trên Groups, 5 skeleton blocks trên Leaderboard. Shimmer opacity 0.55↔1.0 qua `Animated.loop` |
+| 21 | EmptyState component | ✅ Gradient circle 120px + emoji/icon ở Home empty (✨), Groups empty (👥), Leaderboard no-group (🏆) |
+| 22 | FloatingTabBar dot animation | ✅ Dot trượt mượt giữa các tab qua `Animated.spring` (damping 18, stiffness 200), `useNativeDriver: true` |
+| 23 | Habit color tint | ✅ HabitCard iconBox nền = color@18%, border = color@50%; fallback `surface.high` khi không có color |
+| 24 | Theme cycle freeze fix | ✅ Tap Theme cycle nhiều lần liên tục — không freeze, không error immutable, BlurView tint chuyển mượt |
 
 ---
 
@@ -48,7 +55,27 @@
 
 **Root cause:** Ban đầu mutation `Object.assign(Typography.X, {color})` đặt trong `useEffect` của root layout → chạy AFTER zustand state change → component đã render xong với màu cũ.
 
-**Fix:** [apps/mobile/lib/theme.ts](apps/mobile/lib/theme.ts) — chuyển `syncTypography(colors)` vào BÊN TRONG `useColors()` hook. Hook gọi sync mỗi lần được consume, ensure Typography colors update SYNCHRONOUSLY trước khi consumer render. Thêm `lastSyncedScheme` guard tránh assign thừa.
+**Fix:** [apps/mobile/lib/theme.ts](apps/mobile/lib/theme.ts) — chuyển `syncTypography(colors)` vào BÊN TRONG `useColors()` hook. Hook gọi sync mỗi lần được consume, ensure Typography colors update SYNCHRONOUSLY trước khi consumer render.
+
+### 🐛 #4: Reanimated 4 + Expo Go crash `installTurboModule`
+**Triệu chứng:** Mở app trên Expo Go iPhone → red screen `Exception in HostFunction: <unknown>` + cảnh báo "missing default export" cho mọi (tabs)/*. Web không bị.
+
+**Root cause:** Expo SDK 54 default ship `react-native-reanimated@4` cần `react-native-worklets` (native TurboModule). Expo Go từ App Store **không build kèm worklets** → import reanimated → crash → `(tabs)/_layout.tsx` không load được.
+
+**Fix:** Thay `useSharedValue` / `withSpring` / `withRepeat` / `withTiming` từ `react-native-reanimated` bằng `Animated.Value` / `Animated.spring` / `Animated.loop(Animated.sequence(...))` built-in của `react-native`. Bỏ `react-native-reanimated/plugin` khỏi [babel.config.js](apps/mobile/babel.config.js). Cả 2 dùng `useNativeDriver: true` nên vẫn 60fps. Files: [Skeleton.tsx](apps/mobile/components/Skeleton.tsx), [FloatingTabBar.tsx](apps/mobile/components/FloatingTabBar.tsx).
+
+### 🐛 #5: Cycle Theme freeze app (RN dev freeze + Stack rebuild + BlurView re-init)
+**Triệu chứng:** Tap Theme → app đơ ~3-5s, không tap được gì. Sau đó error `Attempted to set the key color on an immutable object that has been frozen`.
+
+**Root cause (3 lớp):**
+1. **RN dev mode tự `Object.freeze` style object** truyền vào `style` prop. `<Text style={Typography.headline}>` lần đầu render → Typography.headline bị freeze cumulative. `Object.assign(Typography.X, {color})` ở lần đổi theme sau throw.
+2. **`<Stack screenOptions={{...}}>` object literal** mới mỗi render → expo-router tear down + rebuild navigator tree → unmount/remount tất cả screens.
+3. **BlurView `tint` prop change** → iOS native re-init UIVisualEffectView ~500ms+ per instance × 3-4 instances ≈ 2s freeze.
+
+**Fix (3 lớp tương ứng):**
+1. **Typography getter pattern** [typography.ts](apps/mobile/constants/typography.ts): Typography giờ là object getter, mỗi access `Typography.headline` trả NEW object clone từ BASE + `color: colorFor(key)` đọc `currentScheme` module-level. RN freeze object mới cũng OK vì lần access kế tiếp lại tạo object mới. `setTypographyScheme(scheme)` set currentScheme — gọi từ zustand subscription **ngoài React lifecycle**.
+2. **Memoize `screenOptions`** [_layout.tsx](apps/mobile/app/_layout.tsx): wrap theme-aware UI vào `<ThemedShell>` con, `useMemo` cho `screenOptions` + `rootStyle` theo string value `colors.surface.lowest` (identity stable khi scheme không đổi).
+3. **BlurView `key={scheme}`** [GlassCard.tsx](apps/mobile/components/GlassCard.tsx), [FloatingTabBar.tsx](apps/mobile/components/FloatingTabBar.tsx): force React unmount old + mount new khi scheme đổi → native create fresh thay vì prop diff path chậm.
 
 ---
 
