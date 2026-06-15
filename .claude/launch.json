@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "-w", "@pulz/mobile", "--", "--web", "--clear"],
+      "port": 8081
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev", "-w", "@pulz/api"],
+      "port": 3000
+    }
+  ]
+}

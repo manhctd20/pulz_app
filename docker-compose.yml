@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pulz-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pulz
+      POSTGRES_PASSWORD: pulz_dev
+      POSTGRES_DB: pulz_dev
+    volumes:
+      - pulz_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pulz -d pulz_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pulz_pg:

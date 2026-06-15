@@ -11,6 +11,14 @@
 | Bước 1–6 trong `CLAUDE_CODE_PROMPT.md` | ✅ Hoàn thành |
 | Màn Home (đầy đủ UI, verify với Stitch) | ✅ Hoàn thành |
 | 6 màn stub (Leaderboard / Groups / Profile / Onboarding / Add-Habit / Group Detail) | ✅ Hoàn thành |
+| Leaderboard / Groups / Group Detail / Add-Habit (full UI + BE wire) | ✅ Hoàn thành |
+| Onboarding (welcome + 2 CTA, redirect logic qua `hasSeenOnboarding`) | ✅ Hoàn thành |
+| Profile (avatar, stats, achievements, settings, language toggle, logout) | ✅ Hoàn thành |
+| Edit Habit (reuse add-habit form với `?habitId`, có Delete) | ✅ Hoàn thành |
+| Group Detail: rename modal (owner) + long-press kick member | ✅ Hoàn thành |
+| Habit Stats heatmap `app/habit/[id].tsx` (3 stat card + 30-day grid 7-col) | ✅ Hoàn thành |
+| Push notification reminder (`expo-notifications`, daily local) | ✅ Hoàn thành |
+| **Light theme** — Dark / Light / System cycle, persist qua zustand, mutation trick cho Typography colors | ✅ Hoàn thành |
 | `npm install` (954 packages) | ✅ exit 0 |
 | `npx tsc --noEmit` | ✅ pass |
 | `npx expo config` | ✅ parse OK |

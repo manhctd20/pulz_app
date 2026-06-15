@@ -1,13 +1,16 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies
 node_modules/
+.pnp.*
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
 
 # Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+**/.expo/
+**/web-build/
+**/expo-env.d.ts
 
 # Native
 *.orig.*
@@ -24,17 +27,24 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
-# macOS
+# Env files
+.env
+.env.*
+!.env.example
+
+# OS
 .DS_Store
-*.pem
+Thumbs.db
 
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# Editor
+# IDE
 .vscode/
 .idea/
+*.swp
+
+# Prisma generated
+**/prisma/generated/
+
+# Database volume
+data/

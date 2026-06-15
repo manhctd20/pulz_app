@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  habits      Habit[]
+  memberships GroupMember[]
+  ownedGroups Group[]       @relation("GroupOwner")
+  checkIns    CheckIn[]
+}
+
+model Habit {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  emoji        String
+  color        String?
+  frequency    String   @default("daily")
+  reminderTime String?
+  groupId      String?
+  group        Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  checkIns CheckIn[]
+
+  @@index([userId])
+  @@index([groupId])
+}
+
+model CheckIn {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  completed Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  ownerId   String
+  owner     User     @relation("GroupOwner", fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+
+  members GroupMember[]
+  habits  Habit[]
+}
+
+model GroupMember {
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
