@@ -86,6 +86,27 @@ try { Invoke-RestMethod -Uri http://localhost:3000/api/v1/auth/login -Method Pos
 ```
 Expect: 401.
 
+**C4a: PATCH /auth/me — update displayName**
+```powershell
+$body = '{"displayName":"Minh Updated"}'
+$res = Invoke-RestMethod -Uri http://localhost:3000/api/v1/auth/me -Method Patch -Body $body -ContentType 'application/json' -Headers @{Authorization="Bearer $minhT"}
+```
+Expect: `$res.displayName -eq 'Minh Updated'`. Restore về `Minh` để các test sau ổn định.
+
+**C4b: POST /auth/change-password — verify old password**
+```powershell
+# Sai password cũ → 401
+try { Invoke-RestMethod -Uri http://localhost:3000/api/v1/auth/change-password -Method Post -Body '{"currentPassword":"wrong","newPassword":"newpass12345"}' -ContentType 'application/json' -Headers @{Authorization="Bearer $minhT"} } catch { $_.Exception.Response.StatusCode }
+# Đúng → 200, sau đó đổi lại về password ban đầu
+```
+Expect: 401 với sai, 200 với đúng. Restore password để test sau login được.
+
+**C4c: DELETE /auth/me cascade owned groups**
+Tạo user disposable `del_<ts>@test.dev`, login lấy token. Tạo 1 group bằng token đó. DELETE `/auth/me` body `{"password":"password123"}`. Verify:
+- 200 response
+- Group đã tạo bị xoá (GET `/groups/:id` với token khác trả 404)
+- User đã xoá (login lại với email → 401)
+
 ### Swagger docs (C0)
 
 **C0: Swagger docs reachable**
@@ -124,7 +145,7 @@ Expect: `$h.id` không null, `$h.currentStreak -eq 0`, `$h.doneToday -eq $false`
 ### Groups (C9–C13)
 
 **C9: List groups của Minh**
-Expect: ít nhất 1 group (seed: code DEMO01 nếu chưa reseed).
+Expect: ít nhất 1 group (seed: code DEMO01 nếu chưa reseed). Mỗi item phải có `memberPreviews: [{initial, avatarUrl}]` (≤ 4 phần tử), KHÔNG còn field `memberAvatars` cũ.
 
 **C10: Tạo group mới**
 ```powershell

@@ -145,7 +145,42 @@
     "settingHelp": "Trợ giúp & phản hồi",
     "logoutConfirmTitle": "Đăng xuất?",
     "logoutConfirmBody": "Bạn sẽ cần đăng nhập lại lần sau.",
-    "comingSoon": "Sắp có"
+    "comingSoon": "Sắp có",
+    "editTitle": "Chỉnh sửa hồ sơ",
+    "editNameLabel": "Tên hiển thị",
+    "editSaved": "Đã lưu hồ sơ",
+    "notifEnabled": "Bật",
+    "notifDisabled": "Tắt",
+    "notifTogglePermission": "Cần quyền thông báo trong Cài đặt iOS"
+  },
+  "account": {
+    "title": "Tài khoản",
+    "emailLabel": "Email",
+    "changePasswordTitle": "Đổi mật khẩu",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "changeButton": "Cập nhật mật khẩu",
+    "changeSuccess": "Đổi mật khẩu thành công",
+    "deleteTitle": "Xoá tài khoản",
+    "deleteWarning": "Hành động này KHÔNG thể hoàn tác. Toàn bộ habit, check-in, nhóm bạn sở hữu sẽ bị xoá.",
+    "deletePasswordLabel": "Xác nhận bằng mật khẩu",
+    "deleteButton": "Xoá tài khoản vĩnh viễn",
+    "deleteConfirmTitle": "Xoá tài khoản?",
+    "deleteConfirmBody": "Bạn chắc chắn? Không thể hoàn tác."
+  },
+  "help": {
+    "title": "Trợ giúp & phản hồi",
+    "intro": "PulzApp giúp bạn cùng bạn bè xây thói quen tốt qua thử thách nhóm và check-in mỗi ngày.",
+    "faqTitle": "Câu hỏi thường gặp",
+    "q1": "Làm sao tham gia nhóm?",
+    "a1": "Tab Nhóm → Nhập mã mời → nhập 6 ký tự bạn nhận được.",
+    "q2": "Tôi quên check-in hôm qua, có cứu được streak không?",
+    "a2": "Hiện tại streak reset nếu lỡ 1 ngày. Tính năng Streak Shield sẽ có ở bản sau.",
+    "q3": "Có thể dùng trên Android không?",
+    "a3": "Có. App build qua Expo cho cả iOS lẫn Android.",
+    "contactTitle": "Liên hệ",
+    "contactBody": "Gửi góp ý / báo lỗi qua email — chúng tôi đọc tất cả.",
+    "contactEmail": "hello@pulz.dev"
   },
   "addHabit": {
     "title": "Thêm thói quen mới",

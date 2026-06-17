@@ -9,7 +9,14 @@ import * as argon2 from 'argon2';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtPayload } from './jwt.types';
-import { LoginDto, RefreshDto, RegisterDto } from './dto';
+import {
+  ChangePasswordDto,
+  DeleteAccountDto,
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  UpdateMeDto,
+} from './dto';
 
 type UserPublic = {
   id: string;
@@ -69,6 +76,37 @@ export class AuthService {
   async me(userId: string): Promise<UserPublic> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     return this.toPublic(user);
+  }
+
+  async updateMe(userId: string, dto: UpdateMeDto): Promise<UserPublic> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.displayName !== undefined ? { displayName: dto.displayName } : {}),
+        ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
+      },
+    });
+    return this.toPublic(updated);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const ok = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!ok) throw new UnauthorizedException('Current password is incorrect');
+    const passwordHash = await argon2.hash(dto.newPassword);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return { ok: true };
+  }
+
+  async deleteAccount(userId: string, dto: DeleteAccountDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const ok = await argon2.verify(user.passwordHash, dto.password);
+    if (!ok) throw new UnauthorizedException('Password is incorrect');
+    // Cascade: habits, check-ins, group memberships đều `onDelete: Cascade` trong schema.
+    // Group nào user là owner sẽ FAIL nếu còn member khác → cần xoá group thủ công trước.
+    await this.prisma.group.deleteMany({ where: { ownerId: userId } });
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { ok: true };
   }
 
   private async buildAuthResponse(user: {

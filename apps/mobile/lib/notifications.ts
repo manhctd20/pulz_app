@@ -2,6 +2,8 @@ import type { HabitWithStatus } from '@pulz/shared';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { useSettingsStore } from '../store/useSettingsStore';
+
 const SCHEDULED_PREFIX = 'pulz-habit-';
 
 Notifications.setNotificationHandler({
@@ -29,18 +31,30 @@ function parseHHmm(s: string | null | undefined): { hour: number; minute: number
   return { hour: parseInt(m[1], 10), minute: parseInt(m[2], 10) };
 }
 
-export async function syncHabitReminders(habits: HabitWithStatus[]): Promise<void> {
+export async function cancelAllHabitReminders(): Promise<void> {
   if (Platform.OS === 'web') return;
-
-  const granted = await ensureNotificationPermission();
-  if (!granted) return;
-
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled
       .filter((n) => typeof n.identifier === 'string' && n.identifier.startsWith(SCHEDULED_PREFIX))
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
+}
+
+export async function syncHabitReminders(habits: HabitWithStatus[]): Promise<void> {
+  if (Platform.OS === 'web') return;
+
+  // Tôn trọng toggle Notifications của user.
+  const enabled = useSettingsStore.getState().notificationsEnabled;
+  if (!enabled) {
+    await cancelAllHabitReminders();
+    return;
+  }
+
+  const granted = await ensureNotificationPermission();
+  if (!granted) return;
+
+  await cancelAllHabitReminders();
 
   for (const habit of habits) {
     const t = parseHHmm(habit.reminderTime);

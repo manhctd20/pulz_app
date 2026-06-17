@@ -22,6 +22,10 @@
 | BE Swagger: `/docs` UI + `/docs-json` OpenAPI 3.0, bearer auth scheme `access-token`, 14 endpoints + 4 tag (auth/habits/groups/leaderboard) | ✅ Verified curl |
 | FE: Edit habit + delete (reuse add-habit form), Stats heatmap 30 ngày, Edit group / kick member, Push notification reminder | ✅ Hoàn thành |
 | FE: **Light theme** (Dark/Light/System), Profile cycle toggle, status bar style auto | ✅ Verified preview MCP |
+| BE: profile management — `PATCH /auth/me` (rename + avatar) + `POST /auth/change-password` (argon2 verify old) + `DELETE /auth/me` (cascade owned groups + user) | ✅ Verified |
+| BE: `GroupSummary.memberPreviews` ({initial, avatarUrl}[]) thay vì `memberAvatars: string[]` | ✅ |
+| FE: Toast component, Edit profile modal, Notifications Switch, Account screen, Help screen, GroupCard initials | ✅ Hoàn thành |
+| FE: Redesign Profile (hero avatar gradient + hero streak + achievement gradient/locked + icon bubbles) + Leaderboard (your-rank card + podium medal emoji + #1 bigger) | ✅ |
 | FE: API client axios + interceptor refresh | ✅ |
 | FE: React Query + auth state với SecureStore | ✅ |
 | FE: Login + Register screen | ✅ |
@@ -92,6 +96,17 @@ Phase 5 (edit / kick / history / push):
 PATCH  /groups/:id              → rename, owner-only
 DELETE /groups/:id/members/:uid → kick member, owner-only, không kick chính mình
 GET    /habits/:id/history?days=30 → entries[30] + currentStreak + longestStreak + totalDone
+```
+
+Phase 7 (profile management):
+```
+PATCH  /auth/me               → cập nhật displayName / avatarUrl
+POST   /auth/change-password  → argon2 verify currentPassword, hash newPassword, rate 5/min
+DELETE /auth/me               → xác nhận password, deleteMany groups owned, delete user. Cascade habits/check-ins/memberships qua Prisma onDelete: Cascade. Rate 3/min.
+
+Group response schema:
+  memberPreviews: { initial: string; avatarUrl: string | null }[]
+    (thay cho memberAvatars: string[] — giúp FE render initial fallback đẹp hơn "?")
 ```
 
 Phase 6 (hardening + docs):

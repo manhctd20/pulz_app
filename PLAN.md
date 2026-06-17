@@ -23,6 +23,13 @@
 | FloatingTabBar dot animation (built-in `Animated.spring`, không phụ thuộc Reanimated) | ✅ Hoàn thành |
 | HabitCard tinted theo `habit.color` (helper `hexToRgba` 0.18/0.5 cho bg/border) | ✅ Hoàn thành |
 | Typography getter pattern + setTypographyScheme subscription (tránh RN dev freeze mutation) | ✅ Hoàn thành |
+| Redesign Profile (hero gradient avatar, hero streak card, achievement gradient/locked states, icon bubbles) | ✅ Hoàn thành |
+| Redesign Leaderboard ("Your rank" card, podium gold/silver/bronze medal emoji + #1 bigger, list highlight me) | ✅ Hoàn thành |
+| Toast component (`<ToastProvider>` + `useToast()`, 3 variants, slide animation, auto dismiss) | ✅ Hoàn thành |
+| Profile Edit modal (sửa displayName qua `PATCH /auth/me`) + Notifications Switch + nav Account/Help | ✅ Hoàn thành |
+| Account screen (đổi password + delete account cascade) | ✅ Hoàn thành |
+| Help screen (FAQ + contact `mailto:`) | ✅ Hoàn thành |
+| GroupCard avatar initials (memberPreviews từ BE thay vì "?" placeholder) | ✅ Hoàn thành |
 | `npm install` (954 packages) | ✅ exit 0 |
 | `npx tsc --noEmit` | ✅ pass |
 | `npx expo config` | ✅ parse OK |

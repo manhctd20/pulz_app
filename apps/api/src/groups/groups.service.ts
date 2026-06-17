@@ -248,7 +248,7 @@ export class GroupsService {
       include: {
         members: {
           take: 4,
-          include: { user: { select: { avatarUrl: true } } },
+          include: { user: { select: { displayName: true, avatarUrl: true } } },
           orderBy: { joinedAt: 'asc' },
         },
         _count: { select: { members: true, habits: true } },
@@ -275,7 +275,10 @@ export class GroupsService {
       habitCount: group._count.habits,
       todayCheckIns,
       todayTotal,
-      memberAvatars: group.members.map((m) => m.user.avatarUrl),
+      memberPreviews: group.members.map((m) => ({
+        initial: (m.user.displayName.slice(0, 1) || '?').toUpperCase(),
+        avatarUrl: m.user.avatarUrl,
+      })),
       createdAt: group.createdAt.toISOString(),
     };
   }

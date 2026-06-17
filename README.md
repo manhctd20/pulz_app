@@ -290,13 +290,16 @@ Tất cả endpoint dùng prefix `/api/v1`. Auth bằng header `Authorization: B
 
 📘 **Swagger UI**: `http://localhost:3000/docs` (auto bật trong dev, set `ENABLE_SWAGGER=true` để bật trong production). OpenAPI spec JSON ở `/docs-json`. Tap **Authorize** → paste access token để test các route có auth.
 
-### Auth (public)
-| Method | Path | Body | Response |
-|---|---|---|---|
-| POST | `/auth/register` | `{email, password, displayName}` | `{accessToken, refreshToken, user}` |
-| POST | `/auth/login` | `{email, password}` | `{accessToken, refreshToken, user}` |
-| POST | `/auth/refresh` | `{refreshToken}` | `{accessToken}` |
-| GET | `/auth/me` | — | `User` |
+### Auth
+| Method | Path | Body | Response | Auth |
+|---|---|---|---|---|
+| POST | `/auth/register` | `{email, password, displayName}` | `{accessToken, refreshToken, user}` | public |
+| POST | `/auth/login` | `{email, password}` | `{accessToken, refreshToken, user}` | public |
+| POST | `/auth/refresh` | `{refreshToken}` | `{accessToken}` | public |
+| GET | `/auth/me` | — | `User` | bearer |
+| PATCH | `/auth/me` | `{displayName?, avatarUrl?}` | `User` | bearer |
+| POST | `/auth/change-password` | `{currentPassword, newPassword}` | `{ok}` | bearer, rate 5/min |
+| DELETE | `/auth/me` | `{password}` | `{ok}` | bearer, rate 3/min, cascade owned groups |
 
 ### Habits (auth required)
 | Method | Path | Body / Query | Response |
@@ -420,6 +423,10 @@ npx tsx prisma\seed.ts
 - **Push notification reminder**: `expo-notifications` schedule daily local notification theo `reminderTime` HH:mm của từng habit, auto-sync khi habits thay đổi, permission request lần đầu
 - **Light theme**: cycle Dark / Light / System trong Profile → Theme row. Status bar style + tất cả surface + text invert đúng. System mode tự follow OS color scheme
 - **Polish UX**: pull-to-refresh trên Home/Groups/Leaderboard (RefreshControl + haptic tap); haptic feedback (tap/success/selection) cho check-in, tab switch, FAB, segment, modal; skeleton shimmer thay ActivityIndicator (HabitCardSkeleton/GroupCardSkeleton); EmptyState với gradient circle + emoji/icon ở 3 màn trống; FloatingTabBar dot animation slide spring; habit `color` tint vào HabitCard iconBox
+- **Profile cleanup**: Edit profile modal (bottom sheet sửa displayName qua `PATCH /auth/me`); Notifications Switch on/off (cancel scheduled khi off); Account screen riêng (đổi password + delete account cascade); Help screen với FAQ + contact mailto
+- **Toast component**: `<ToastProvider>` global + `useToast()` hook, 3 variant (success/info/error), slide-down animation, auto dismiss 2.2s. Dùng cho copy invite code, save profile, change password success
+- **GroupCard avatar initials**: BE trả `memberPreviews: [{initial, avatarUrl}]` thay vì `memberAvatars: string[]`. FE hiển thị chữ cái đầu tên member trên avatar gradient
+- **Redesign Profile + Leaderboard**: Profile hero gradient avatar + hero streak card + achievement gradient/locked states + setting icon bubbles; Leaderboard "Your rank" card với gap-to-leader, podium gold/silver/bronze (medal emoji 🥇🥈🥉 + #1 to hơn), rank list highlight user của mình
 
 ### ⏳ Next (đề xuất, chưa cam kết)
 - **Avatar upload** (BE: presigned S3 URL hoặc Cloudinary; FE: image picker)

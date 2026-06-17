@@ -33,6 +33,14 @@
 | 22 | FloatingTabBar dot animation | ✅ Dot trượt mượt giữa các tab qua `Animated.spring` (damping 18, stiffness 200), `useNativeDriver: true` |
 | 23 | Habit color tint | ✅ HabitCard iconBox nền = color@18%, border = color@50%; fallback `surface.high` khi không có color |
 | 24 | Theme cycle freeze fix | ✅ Tap Theme cycle nhiều lần liên tục — không freeze, không error immutable, BlurView tint chuyển mượt |
+| 25 | Profile Edit modal | ✅ Tap "Chỉnh sửa hồ sơ" → bottom sheet → sửa displayName → Save → Toast "Đã lưu hồ sơ", hero header tên đổi ngay |
+| 26 | Notifications Switch | ✅ Toggle ON↔OFF, Toast feedback. Off → `syncHabitReminders` cancel scheduled, không re-schedule khi habits đổi |
+| 27 | Account screen | ✅ Tap row "Tài khoản" → push `/account`. Change password (current+new) → Toast success. Delete account (verify password + Alert confirm) → logout |
+| 28 | Help screen | ✅ Tap "Trợ giúp" → 3 FAQ card + nút contact mở `mailto:hello@pulz.dev` |
+| 29 | Toast | ✅ Slide-down top, auto dismiss ~2.2s, 3 variant (success teal / info tím / error coral). Dùng cho copy code, save profile, change password |
+| 30 | GroupCard avatar initials | ✅ Card "Bạn thân" hiển thị initial M/L/H/A (4 member đầu) thay vì "?" placeholder cũ |
+| 31 | Redesign Profile | ✅ Hero gradient bg + avatar ring effect + shadow glow tím + Edit profile button có icon ✏️; hero streak card riêng (số 40px) + 2 small stats; achievement gradient unlocked vs locked dim + 🔒 badge; setting icon bubble color-coded |
+| 32 | Redesign Leaderboard | ✅ Header group chip + member count; "Your rank" hero card tím với "Cách dẫn đầu X điểm" hoặc "Bạn đang dẫn đầu! 🎉"; podium medal emoji 🥇🥈🥉 + #1 avatar 76px (vs 60px); rank list border tím dày khi là user của mình |
 
 ---
 

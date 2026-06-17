@@ -145,7 +145,42 @@
     "settingHelp": "Help & feedback",
     "logoutConfirmTitle": "Sign out?",
     "logoutConfirmBody": "You'll need to sign in next time.",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "editTitle": "Edit profile",
+    "editNameLabel": "Display name",
+    "editSaved": "Profile saved",
+    "notifEnabled": "On",
+    "notifDisabled": "Off",
+    "notifTogglePermission": "Notification permission required in iOS Settings"
+  },
+  "account": {
+    "title": "Account",
+    "emailLabel": "Email",
+    "changePasswordTitle": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "changeButton": "Update password",
+    "changeSuccess": "Password updated",
+    "deleteTitle": "Delete account",
+    "deleteWarning": "This action is permanent. All your habits, check-ins, and owned groups will be deleted.",
+    "deletePasswordLabel": "Confirm with password",
+    "deleteButton": "Delete account permanently",
+    "deleteConfirmTitle": "Delete account?",
+    "deleteConfirmBody": "Are you sure? This cannot be undone."
+  },
+  "help": {
+    "title": "Help & feedback",
+    "intro": "PulzApp helps you build good habits with friends through group challenges and daily check-ins.",
+    "faqTitle": "Frequently asked",
+    "q1": "How do I join a group?",
+    "a1": "Groups tab → Enter invite code → type the 6-char code you received.",
+    "q2": "I forgot to check in yesterday — can I save my streak?",
+    "a2": "Streaks reset if you miss a day. Streak Shield is coming in a future release.",
+    "q3": "Does it work on Android?",
+    "a3": "Yes. App is built with Expo and runs on both iOS and Android.",
+    "contactTitle": "Contact",
+    "contactBody": "Send feedback or bug reports via email — we read every message.",
+    "contactEmail": "hello@pulz.dev"
   },
   "addHabit": {
     "title": "Add new habit",

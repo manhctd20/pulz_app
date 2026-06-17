@@ -13,6 +13,9 @@ type AuthState = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (displayName: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -47,6 +50,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    await setStoredTokens(null);
+    set({ status: 'unauthenticated', user: null });
+  },
+
+  updateProfile: async (displayName) => {
+    const user = await authApi.updateMe({ displayName });
+    set({ user });
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    await authApi.changePassword({ currentPassword, newPassword });
+  },
+
+  deleteAccount: async (password) => {
+    await authApi.deleteAccount({ password });
     await setStoredTokens(null);
     set({ status: 'unauthenticated', user: null });
   },

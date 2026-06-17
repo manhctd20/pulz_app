@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassCard } from '../../components/GlassCard';
 import { ProgressBar } from '../../components/ProgressBar';
+import { useToast } from '../../components/Toast';
 import type { ColorPalette } from '../../constants/colors';
 import { Radius, Spacing } from '../../constants/spacing';
 import { FontFamily, Typography } from '../../constants/typography';
@@ -45,6 +46,7 @@ export default function GroupDetailScreen() {
   const kickMutation = useKickMember();
   const deleteGroupMutation = useDeleteGroup();
   const updateMutation = useUpdateGroup();
+  const toast = useToast();
 
   const [renameVisible, setRenameVisible] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -128,6 +130,7 @@ export default function GroupDetailScreen() {
 
   const copyCode = async () => {
     await Clipboard.setStringAsync(group.code);
+    toast.show(t('groups.codeCopied'), 'success');
   };
 
   return (

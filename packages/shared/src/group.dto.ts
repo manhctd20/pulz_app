@@ -5,6 +5,12 @@ import { UserSchema } from './user.dto';
 export const GroupMemberRoleSchema = z.enum(['owner', 'admin', 'member']);
 export type GroupMemberRole = z.infer<typeof GroupMemberRoleSchema>;
 
+export const MemberPreviewSchema = z.object({
+  initial: z.string().length(1),
+  avatarUrl: z.string().nullable(),
+});
+export type MemberPreview = z.infer<typeof MemberPreviewSchema>;
+
 export const GroupSummarySchema = z.object({
   id: z.string(),
   code: z.string(),
@@ -14,7 +20,7 @@ export const GroupSummarySchema = z.object({
   habitCount: z.number().int().nonnegative(),
   todayCheckIns: z.number().int().nonnegative(),
   todayTotal: z.number().int().nonnegative(),
-  memberAvatars: z.array(z.string().nullable()),
+  memberPreviews: z.array(MemberPreviewSchema),
   createdAt: z.string(),
 });
 export type GroupSummary = z.infer<typeof GroupSummarySchema>;

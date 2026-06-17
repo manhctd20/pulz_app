@@ -47,7 +47,7 @@ export function GroupCard({ group }: Props) {
 
         <View style={styles.footer}>
           <View style={styles.avatarStack}>
-            {group.memberAvatars.slice(0, 3).map((_, i) => (
+            {group.memberPreviews.slice(0, 3).map((m, i) => (
               <View
                 key={i}
                 style={[
@@ -55,7 +55,7 @@ export function GroupCard({ group }: Props) {
                   { marginLeft: i === 0 ? 0 : -10, zIndex: 3 - i },
                 ]}
               >
-                <Text style={styles.avatarText}>{'?'}</Text>
+                <Text style={styles.avatarText}>{m.initial}</Text>
               </View>
             ))}
             {group.memberCount > 3 && (
@@ -105,7 +105,7 @@ function makeStyles(c: ColorPalette) {
       width: 28,
       height: 28,
       borderRadius: 14,
-      backgroundColor: c.surface.high,
+      backgroundColor: c.primaryContainer,
       borderWidth: 2,
       borderColor: c.surface.container,
       alignItems: 'center',

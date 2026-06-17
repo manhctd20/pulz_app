@@ -18,6 +18,7 @@ import { useEffect, useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ToastProvider } from '../components/Toast';
 import '../lib/i18n';
 import { queryClient } from '../lib/queryClient';
 import { useColors, useScheme } from '../lib/theme';
@@ -77,17 +78,21 @@ function ThemedShell() {
   return (
     <GestureHandlerRootView style={rootStyle}>
       <SafeAreaProvider>
-        <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
-        <AuthGate />
-        <Stack screenOptions={screenOptions}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="login" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="group/[id]" />
-          <Stack.Screen name="habit/[id]" />
-        </Stack>
+        <ToastProvider>
+          <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
+          <AuthGate />
+          <Stack screenOptions={screenOptions}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="onboarding" />
+            <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="group/[id]" />
+            <Stack.Screen name="habit/[id]" />
+            <Stack.Screen name="account" />
+            <Stack.Screen name="help" />
+          </Stack>
+        </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

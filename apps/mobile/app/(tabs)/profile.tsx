@@ -1,17 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo } from 'react';
+import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useToast } from '../../components/Toast';
 import type { ColorPalette } from '../../constants/colors';
 import { Radius, Spacing } from '../../constants/spacing';
 import { FontFamily, Typography } from '../../constants/typography';
@@ -32,12 +40,21 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const theme = useSettingsStore((s) => s.theme);
   const cycleTheme = useSettingsStore((s) => s.cycleTheme);
+  const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
+  const setNotificationsEnabled = useSettingsStore((s) => s.setNotificationsEnabled);
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const toast = useToast();
+
+  const [editVisible, setEditVisible] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const habits = useHabits();
   const groups = useGroups();
@@ -80,6 +97,42 @@ export default function ProfileScreen() {
     Alert.alert(t('profile.comingSoon'));
   };
 
+  const openEdit = () => {
+    hapticTap();
+    setEditName(user?.displayName ?? '');
+    setEditError(null);
+    setEditVisible(true);
+  };
+
+  const submitEdit = async () => {
+    setEditError(null);
+    setEditSaving(true);
+    try {
+      await updateProfile(editName.trim());
+      setEditVisible(false);
+      toast.show(t('profile.editSaved'), 'success');
+    } catch (e: any) {
+      setEditError(e?.response?.data?.message ?? e?.message ?? 'Error');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const toggleNotifications = (value: boolean) => {
+    hapticSelection();
+    setNotificationsEnabled(value);
+    toast.show(value ? t('profile.notifEnabled') : t('profile.notifDisabled'), 'info');
+  };
+
+  const goAccount = () => {
+    hapticTap();
+    router.push('/account');
+  };
+  const goHelp = () => {
+    hapticTap();
+    router.push('/help');
+  };
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -116,7 +169,7 @@ export default function ProfileScreen() {
                 {t('profile.joinedMonth', { month: joinedMonth })}
               </Text>
             )}
-            <Pressable onPress={comingSoon} style={styles.editBtn}>
+            <Pressable onPress={openEdit} style={styles.editBtn}>
               <Ionicons name="create-outline" size={14} color={colors.text.primary} />
               <Text style={styles.editText}>{t('profile.editProfile')}</Text>
             </Pressable>
@@ -224,8 +277,14 @@ export default function ProfileScreen() {
               iconBg="rgba(255, 159, 135, 0.2)"
               iconFg="#FF9F87"
               label={t('profile.settingNotifications')}
-              value={t('profile.comingSoon')}
-              onPress={comingSoon}
+              trailing={
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={toggleNotifications}
+                  trackColor={{ true: colors.primary, false: colors.surface.high }}
+                  thumbColor="#FFFFFF"
+                />
+              }
             />
             <SettingRow
               icon={theme === 'light' ? 'sunny-outline' : theme === 'system' ? 'phone-portrait-outline' : 'moon-outline'}
@@ -258,8 +317,7 @@ export default function ProfileScreen() {
               iconBg="rgba(140, 132, 235, 0.2)"
               iconFg="#C5C0FF"
               label={t('profile.settingAccount')}
-              value={t('profile.comingSoon')}
-              onPress={comingSoon}
+              onPress={goAccount}
               showDivider={false}
             />
           </View>
@@ -270,7 +328,7 @@ export default function ProfileScreen() {
               iconBg="rgba(127, 119, 221, 0.15)"
               iconFg={colors.text.secondary}
               label={t('profile.settingHelp')}
-              onPress={comingSoon}
+              onPress={goHelp}
               showDivider={false}
             />
           </View>
@@ -281,6 +339,61 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>{t('auth.logout')}</Text>
         </Pressable>
       </ScrollView>
+
+      {/* Edit profile modal */}
+      <Modal
+        visible={editVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalSheet}>
+            <Text style={Typography.title}>{t('profile.editTitle')}</Text>
+            <View style={{ gap: Spacing.xs }}>
+              <Text style={[Typography.label, { color: colors.text.muted }]}>
+                {t('profile.editNameLabel')}
+              </Text>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholderTextColor={colors.text.muted}
+                style={styles.modalInput}
+                autoFocus
+                maxLength={50}
+              />
+            </View>
+            {editError && (
+              <Text style={[Typography.bodySm, { color: colors.error }]}>{editError}</Text>
+            )}
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setEditVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.modalConfirmBtn,
+                  (editSaving || !editName.trim()) && { opacity: 0.6 },
+                ]}
+                onPress={submitEdit}
+                disabled={editSaving || !editName.trim()}
+              >
+                {editSaving ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>{t('common.save')}</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -291,6 +404,7 @@ function SettingRow({
   iconFg,
   label,
   value,
+  trailing,
   onPress,
   showDivider = true,
 }: {
@@ -299,23 +413,33 @@ function SettingRow({
   iconFg: string;
   label: string;
   value?: string;
-  onPress: () => void;
+  trailing?: React.ReactNode;
+  onPress?: () => void;
   showDivider?: boolean;
 }) {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const Inner = (
+    <View style={styles.settingRow}>
+      <View style={[styles.settingIconBubble, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={18} color={iconFg} />
+      </View>
+      <Text style={[Typography.bodyLg, { flex: 1 }]}>{label}</Text>
+      {trailing
+        ? trailing
+        : (
+          <>
+            {value && (
+              <Text style={[Typography.bodySm, { color: colors.text.muted }]}>{value}</Text>
+            )}
+            <Ionicons name="chevron-forward" size={16} color={colors.text.inactive} />
+          </>
+        )}
+    </View>
+  );
   return (
     <>
-      <Pressable onPress={onPress} style={styles.settingRow}>
-        <View style={[styles.settingIconBubble, { backgroundColor: iconBg }]}>
-          <Ionicons name={icon} size={18} color={iconFg} />
-        </View>
-        <Text style={[Typography.bodyLg, { flex: 1 }]}>{label}</Text>
-        {value && (
-          <Text style={[Typography.bodySm, { color: colors.text.muted }]}>{value}</Text>
-        )}
-        <Ionicons name="chevron-forward" size={16} color={colors.text.inactive} />
-      </Pressable>
+      {onPress ? <Pressable onPress={onPress}>{Inner}</Pressable> : Inner}
       {showDivider && <View style={styles.divider} />}
     </>
   );
@@ -499,5 +623,48 @@ function makeStyles(c: ColorPalette) {
       fontFamily: FontFamily.manrope.bold,
       color: c.error,
     },
+    // MODAL
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'flex-end',
+    },
+    modalSheet: {
+      backgroundColor: c.surface.container,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      padding: Spacing.lg,
+      gap: Spacing.base,
+      paddingBottom: Spacing.xl,
+    },
+    modalInput: {
+      backgroundColor: c.surface.high,
+      borderRadius: Radius.lg,
+      paddingHorizontal: Spacing.base,
+      height: 52,
+      color: c.text.primary,
+      fontFamily: FontFamily.beVietnam.regular,
+      fontSize: 16,
+    },
+    modalActions: { flexDirection: 'row', gap: Spacing.sm },
+    modalCancelBtn: {
+      flex: 1,
+      height: 48,
+      borderRadius: Radius.xl,
+      borderWidth: 1,
+      borderColor: c.glass.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalCancelText: { fontFamily: FontFamily.manrope.bold, color: c.text.primary },
+    modalConfirmBtn: {
+      flex: 1,
+      height: 48,
+      borderRadius: Radius.xl,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalConfirmText: { fontFamily: FontFamily.manrope.bold, color: '#FFFFFF' },
   });
 }

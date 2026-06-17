@@ -1,10 +1,17 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
-import { LoginDto, RefreshDto, RegisterDto } from './dto';
+import {
+  ChangePasswordDto,
+  DeleteAccountDto,
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  UpdateMeDto,
+} from './dto';
 import { JwtPayload } from './jwt.types';
 import { Public } from './public.decorator';
 
@@ -45,5 +52,32 @@ export class AuthController {
   @ApiOperation({ summary: 'Thông tin user hiện tại' })
   me(@CurrentUser() user: JwtPayload) {
     return this.auth.me(user.sub);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Cập nhật displayName / avatarUrl' })
+  updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateMeDto) {
+    return this.auth.updateMe(user.sub, dto);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Đổi mật khẩu (cần password cũ)' })
+  changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto) {
+    return this.auth.changePassword(user.sub, dto);
+  }
+
+  @Delete('me')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Xoá tài khoản (cascade habits, check-ins, groups owned)',
+  })
+  deleteAccount(@CurrentUser() user: JwtPayload, @Body() dto: DeleteAccountDto) {
+    return this.auth.deleteAccount(user.sub, dto);
   }
 }

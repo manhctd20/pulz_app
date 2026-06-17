@@ -11,11 +11,13 @@ type SettingsState = {
   userName: string;
   hasSeenOnboarding: boolean;
   theme: ThemePreference;
+  notificationsEnabled: boolean;
   setLanguage: (lang: SupportedLanguage) => void;
   setUserName: (name: string) => void;
   markOnboarded: () => void;
   setTheme: (theme: ThemePreference) => void;
   cycleTheme: () => void;
+  setNotificationsEnabled: (enabled: boolean) => void;
 };
 
 const THEME_CYCLE: ThemePreference[] = ['dark', 'light', 'system'];
@@ -27,6 +29,7 @@ export const useSettingsStore = create<SettingsState>()(
       userName: 'Minh',
       hasSeenOnboarding: false,
       theme: 'dark',
+      notificationsEnabled: true,
       setLanguage: (lang) => {
         if (!SUPPORTED_LANGUAGES.includes(lang)) return;
         void i18n.changeLanguage(lang);
@@ -40,6 +43,7 @@ export const useSettingsStore = create<SettingsState>()(
         const idx = THEME_CYCLE.indexOf(current);
         set({ theme: THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] });
       },
+      setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
     }),
     {
       name: 'pulzapp-settings',

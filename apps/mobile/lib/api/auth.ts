@@ -1,8 +1,11 @@
 import {
   AuthResponseSchema,
+  ChangePasswordDto,
+  DeleteAccountDto,
   LoginDto,
   RefreshResponseSchema,
   RegisterDto,
+  UpdateMeDto,
   UserSchema,
 } from '@pulz/shared';
 
@@ -26,4 +29,17 @@ export async function refresh(refreshToken: string) {
 export async function me() {
   const { data } = await api.get('/auth/me');
   return UserSchema.parse(data);
+}
+
+export async function updateMe(dto: UpdateMeDto) {
+  const { data } = await api.patch('/auth/me', dto);
+  return UserSchema.parse(data);
+}
+
+export async function changePassword(dto: ChangePasswordDto) {
+  await api.post('/auth/change-password', dto);
+}
+
+export async function deleteAccount(dto: DeleteAccountDto) {
+  await api.delete('/auth/me', { data: dto });
 }
