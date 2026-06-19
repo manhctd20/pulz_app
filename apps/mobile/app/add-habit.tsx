@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { HabitFrequency } from '@pulz/shared';
+import { HabitCategory, HabitFrequency } from '@pulz/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -31,6 +32,13 @@ import { useColors } from '../lib/theme';
 
 const EMOJIS = ['💧', '🏃', '😴', '📚', '🧘', '🥗', '✏️', '🎵', '🌱'];
 const COLORS = ['#7F77DD', '#5DCAA5', '#FF9F87', '#C5C0FF', '#6EDAB4'];
+const CATEGORIES: HabitCategory[] = [
+  'health',
+  'learning',
+  'mindfulness',
+  'lifestyle',
+  'other',
+];
 
 export default function AddHabitScreen() {
   const { t } = useTranslation();
@@ -58,6 +66,8 @@ export default function AddHabitScreen() {
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
   const [reminderTime, setReminderTime] = useState('');
   const [groupId, setGroupId] = useState<string | undefined>(undefined);
+  const [category, setCategory] = useState<HabitCategory | undefined>(undefined);
+  const [shield, setShield] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
@@ -69,6 +79,8 @@ export default function AddHabitScreen() {
     setFrequency((existing.frequency as HabitFrequency) ?? 'daily');
     setReminderTime(existing.reminderTime ?? '');
     setGroupId(existing.groupId ?? undefined);
+    setCategory((existing.category as HabitCategory | null) ?? undefined);
+    setShield(existing.streakShieldEnabled ?? false);
     setHydrated(true);
   }, [isEdit, hydrated, existing]);
 
@@ -84,6 +96,8 @@ export default function AddHabitScreen() {
         frequency,
         reminderTime: reminderTime.trim() || undefined,
         groupId,
+        category,
+        streakShieldEnabled: shield,
       };
       if (isEdit && editingId) {
         await updateMutation.mutateAsync({ id: editingId, dto });
@@ -238,6 +252,42 @@ export default function AddHabitScreen() {
             </ScrollView>
           </View>
 
+          <View style={styles.section}>
+            <Text style={[Typography.label, styles.label]}>{t('addHabit.categoryLabel')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {CATEGORIES.map((cat) => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setCategory(category === cat ? undefined : cat)}
+                  style={[styles.chip, category === cat && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
+                    {t(`addHabit.category${cat.charAt(0).toUpperCase() + cat.slice(1)}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.shieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[Typography.bodyLgMedium, { color: colors.text.primary }]}>
+                  🛡 {t('addHabit.shieldLabel')}
+                </Text>
+                <Text style={[Typography.bodySm, { color: colors.text.muted }]}>
+                  {t('addHabit.shieldHint')}
+                </Text>
+              </View>
+              <Switch
+                value={shield}
+                onValueChange={setShield}
+                trackColor={{ true: colors.primary, false: colors.surface.high }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
+
           {error && <Text style={styles.error}>{error}</Text>}
 
           <Pressable
@@ -357,6 +407,14 @@ function makeStyles(c: ColorPalette) {
       fontSize: 13,
     },
     chipTextActive: { color: c.primaryLight },
+    shieldRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      backgroundColor: c.surface.container,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+    },
     error: { color: c.error, textAlign: 'center' },
     saveBtn: {
       backgroundColor: c.primary,

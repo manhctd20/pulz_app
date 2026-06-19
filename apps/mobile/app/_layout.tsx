@@ -41,7 +41,12 @@ function AuthGate() {
   useEffect(() => {
     if (status === 'loading') return;
     const first = segments[0];
-    const inAuthRoute = first === 'login' || first === 'register' || first === 'onboarding';
+    const inAuthRoute =
+      first === 'login' ||
+      first === 'register' ||
+      first === 'onboarding' ||
+      first === 'forgot-password' ||
+      first === 'reset-password';
     if (status === 'unauthenticated') {
       if (!hasSeenOnboarding && first !== 'onboarding') {
         router.replace('/onboarding');
@@ -91,6 +96,8 @@ function ThemedShell() {
             <Stack.Screen name="habit/[id]" />
             <Stack.Screen name="account" />
             <Stack.Screen name="help" />
+            <Stack.Screen name="forgot-password" />
+            <Stack.Screen name="reset-password" />
           </Stack>
         </ToastProvider>
       </SafeAreaProvider>

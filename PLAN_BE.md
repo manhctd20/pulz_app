@@ -26,6 +26,10 @@
 | BE: `GroupSummary.memberPreviews` ({initial, avatarUrl}[]) thay vì `memberAvatars: string[]` | ✅ |
 | FE: Toast component, Edit profile modal, Notifications Switch, Account screen, Help screen, GroupCard initials | ✅ Hoàn thành |
 | FE: Redesign Profile (hero avatar gradient + hero streak + achievement gradient/locked + icon bubbles) + Leaderboard (your-rank card + podium medal emoji + #1 bigger) | ✅ |
+| BE: Password reset — `PasswordResetToken` model + `POST /auth/forgot-password` + `POST /auth/reset-password`, EmailService Resend HTTP API + dev log fallback, base64url 24-byte token (30 min TTL, single-use), forgot không leak user existence | ✅ |
+| BE: Habit `category` enum (health/learning/mindfulness/lifestyle/other) + `streakShieldEnabled` flag, `calcStreak` cho phép 1 grace day khi shield bật | ✅ |
+| FE: Forgot-password + Reset-password screens (deep-link cùng token), Login → Forgot link | ✅ |
+| FE: Add Habit form thêm category chip picker + Streak Shield Switch; Home filter chips theo category (chỉ render category đang dùng) | ✅ |
 | FE: API client axios + interceptor refresh | ✅ |
 | FE: React Query + auth state với SecureStore | ✅ |
 | FE: Login + Register screen | ✅ |
@@ -132,6 +136,29 @@ Swagger:
   GET /docs-json → OpenAPI 3.0 spec
   Bearer auth scheme "access-token" — paste accessToken qua Authorize button
   Tự bật trong dev, production cần ENABLE_SWAGGER=true để expose
+```
+
+Phase 8 (password reset + categories + shield):
+```
+POST /auth/forgot-password  body {email} → {ok: true [, devToken]}
+  Public, rate 3/min/IP, base64url(24) token, expiresAt = now + 30 min
+  devToken trả về chỉ khi NODE_ENV !== 'production' (để dev / test không cần Resend key)
+  Email gửi qua Resend HTTP API; nếu RESEND_API_KEY trống → logger.warn full reset URL
+  Không tiết lộ user-exists (luôn trả ok:true)
+
+POST /auth/reset-password   body {token, newPassword(≥8,≤72)} → {ok}
+  Public, rate 5/min/IP
+  Transaction: update user.passwordHash + mark token.usedAt + invalidate other tokens của user
+  Lỗi: token không tồn tại / expired / đã dùng → 400
+
+Habit schema:
+  category String?  -- enum check ở zod: health|learning|mindfulness|lifestyle|other
+  streakShieldEnabled Boolean @default(false)
+
+calcStreak(checkIns, today, shieldEnabled):
+  Đếm ngược từ today, mỗi ngày có check-in → streak++
+  Nếu shieldEnabled và streak > 0 và chưa shield + ngày đó không phải today → cho phép 1 ngày miss duy nhất
+  Hết shield → break
 ```
 
 ---

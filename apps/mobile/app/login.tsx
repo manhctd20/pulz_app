@@ -95,13 +95,22 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          <Link href="/register" asChild>
-            <Pressable style={styles.linkBtn}>
-              <Text style={[Typography.bodySm, styles.linkText]}>
-                {t('auth.noAccount')}
-              </Text>
-            </Pressable>
-          </Link>
+          <View style={styles.linkRow}>
+            <Link href="/forgot-password" asChild>
+              <Pressable style={styles.linkBtn}>
+                <Text style={[Typography.bodySm, styles.linkText]}>
+                  {t('auth.forgotLink')}
+                </Text>
+              </Pressable>
+            </Link>
+            <Link href="/register" asChild>
+              <Pressable style={styles.linkBtn}>
+                <Text style={[Typography.bodySm, styles.linkText]}>
+                  {t('auth.noAccount')}
+                </Text>
+              </Pressable>
+            </Link>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -147,7 +156,12 @@ function makeStyles(c: ColorPalette) {
       color: '#FFFFFF',
       letterSpacing: 0.3,
     },
-    linkBtn: { alignSelf: 'center', padding: Spacing.sm },
+    linkBtn: { padding: Spacing.sm },
+    linkRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
     linkText: { color: c.primaryLight },
   });
 }

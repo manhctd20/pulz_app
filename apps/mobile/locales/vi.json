@@ -24,7 +24,21 @@
     "haveAccount": "Đã có tài khoản? Đăng nhập",
     "loginError": "Đăng nhập thất bại",
     "registerError": "Đăng ký thất bại",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "forgotLink": "Quên mật khẩu?",
+    "forgotTitle": "Đặt lại mật khẩu",
+    "forgotSubtitle": "Nhập email — chúng tôi sẽ gửi mã đặt lại.",
+    "forgotEmailLabel": "Email",
+    "forgotSubmit": "Gửi mã",
+    "forgotSent": "Đã gửi! Kiểm tra email.",
+    "forgotDevTokenLabel": "Token (dev mode)",
+    "haveToken": "Đã có token? Đặt lại ngay",
+    "resetTitle": "Đặt mật khẩu mới",
+    "resetSubtitle": "Nhập token nhận được và mật khẩu mới.",
+    "resetTokenLabel": "Token",
+    "resetNewPasswordLabel": "Mật khẩu mới (≥ 8 ký tự)",
+    "resetSubmit": "Đặt lại mật khẩu",
+    "resetSuccess": "Đặt lại thành công! Đăng nhập lại."
   },
   "tabs": {
     "home": "Trang chủ",
@@ -44,7 +58,8 @@
     "rank": "#{{rank}}",
     "empty": "Tạo thói quen đầu tiên của bạn",
     "emptyTitle": "Chưa có thói quen nào",
-    "errorLoading": "Không tải được dữ liệu"
+    "errorLoading": "Không tải được dữ liệu",
+    "filterAll": "Tất cả"
   },
   "groups": {
     "title": "Nhóm của tôi",
@@ -200,7 +215,15 @@
     "saveError": "Không lưu được, vui lòng thử lại",
     "delete": "Xoá thói quen",
     "deleteTitle": "Xoá thói quen?",
-    "deleteConfirm": "Toàn bộ lịch sử check-in sẽ bị mất. Không thể hoàn tác."
+    "deleteConfirm": "Toàn bộ lịch sử check-in sẽ bị mất. Không thể hoàn tác.",
+    "categoryLabel": "Danh mục",
+    "categoryHealth": "Sức khoẻ",
+    "categoryLearning": "Học tập",
+    "categoryMindfulness": "Tinh thần",
+    "categoryLifestyle": "Lối sống",
+    "categoryOther": "Khác",
+    "shieldLabel": "Streak Shield",
+    "shieldHint": "Bảo vệ chuỗi: cho phép lỡ 1 ngày mà không reset"
   },
   "habits": {
     "water": "Uống đủ nước",

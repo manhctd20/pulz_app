@@ -107,6 +107,16 @@ Tạo user disposable `del_<ts>@test.dev`, login lấy token. Tạo 1 group bằ
 - Group đã tạo bị xoá (GET `/groups/:id` với token khác trả 404)
 - User đã xoá (login lại với email → 401)
 
+**C4d: Password reset flow (forgot + reset, devToken path)**
+Tạo user disposable `reset_<ts>@test.dev`. Gọi `POST /auth/forgot-password` body `{email}`:
+- Expect 200 với `ok:true` và (NODE_ENV != production) `devToken` non-empty string.
+- Gọi lại với email không tồn tại → vẫn 200 `ok:true` không `devToken` (không leak user existence).
+
+Dùng `$devToken` gọi `POST /auth/reset-password` body `{token: $devToken, newPassword: "newpass456"}`:
+- Expect 200 `ok:true`.
+- Login bằng `email + "newpass456"` → 200 với access token mới (password cũ "password123" giờ trả 401).
+- Tái dùng `$devToken` lần 2 → 400 (token đã used).
+
 ### Swagger docs (C0)
 
 **C0: Swagger docs reachable**
@@ -141,6 +151,13 @@ Expect: `$h.id` không null, `$h.currentStreak -eq 0`, `$h.doneToday -eq $false`
 **C8b: Habit history**
 - GET `/habits/<seed habit id>/history?days=30`
 - Expect: `entries.Count = 30`, mỗi entry `{date, completed}`. `currentStreak`, `longestStreak`, `totalDone` >= 0. `longestStreak >= currentStreak`. `totalDone` = số entries có `completed: true`.
+
+**C8c: Habit category + Streak Shield round-trip**
+- POST `/habits` body `{"name":"Cat test","emoji":"🌱","frequency":"daily","category":"mindfulness","streakShieldEnabled":true}`
+- Expect: response trả về cả 2 field, `category === 'mindfulness'`, `streakShieldEnabled === true`
+- PATCH `/habits/:id` body `{"category":"health","streakShieldEnabled":false}` → response cập nhật đúng
+- POST `/habits` body `{"name":"Bad cat","emoji":"⚠️","frequency":"daily","category":"INVALID_CAT"}` → expect 400 (zod enum reject)
+- Cleanup: DELETE habit vừa tạo
 
 ### Groups (C9–C13)
 

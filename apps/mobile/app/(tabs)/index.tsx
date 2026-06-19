@@ -1,6 +1,7 @@
+import type { HabitCategory } from '@pulz/shared';
 import { router } from 'expo-router';
-import { useEffect, useMemo } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +21,7 @@ import { useColors } from '../../lib/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const USER_RANK = 2;
+const CATEGORIES: HabitCategory[] = ['health', 'learning', 'mindfulness', 'lifestyle', 'other'];
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -28,8 +30,20 @@ export default function HomeScreen() {
   const toggleMutation = useToggleCheckIn();
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [filter, setFilter] = useState<HabitCategory | 'all'>('all');
 
-  const habits = habitsQuery.data ?? [];
+  const allHabits = habitsQuery.data ?? [];
+  const habits = useMemo(
+    () => (filter === 'all' ? allHabits : allHabits.filter((h) => h.category === filter)),
+    [allHabits, filter],
+  );
+  const visibleCategories = useMemo(() => {
+    const set = new Set<HabitCategory>();
+    for (const h of allHabits) {
+      if (h.category) set.add(h.category as HabitCategory);
+    }
+    return CATEGORIES.filter((c) => set.has(c));
+  }, [allHabits]);
 
   useEffect(() => {
     if (habitsQuery.data) {
@@ -37,10 +51,10 @@ export default function HomeScreen() {
     }
   }, [habitsQuery.data]);
 
-  const done = habits.filter((h) => h.doneToday).length;
-  const total = habits.length;
+  const done = allHabits.filter((h) => h.doneToday).length;
+  const total = allHabits.length;
   const progress = total === 0 ? 0 : done / total;
-  const userStreak = habits.reduce((m, h) => Math.max(m, h.currentStreak), 0);
+  const userStreak = allHabits.reduce((m, h) => Math.max(m, h.currentStreak), 0);
 
   const userName = user?.displayName ?? 'Bạn';
 
@@ -100,6 +114,43 @@ export default function HomeScreen() {
 
         <View style={styles.section}>
           <Text style={Typography.title}>{t('home.habitsTitle')}</Text>
+          {visibleCategories.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              <Pressable
+                onPress={() => {
+                  hapticTap();
+                  setFilter('all');
+                }}
+                style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
+              >
+                <Text
+                  style={[styles.filterText, filter === 'all' && styles.filterTextActive]}
+                >
+                  {t('home.filterAll')}
+                </Text>
+              </Pressable>
+              {visibleCategories.map((cat) => (
+                <Pressable
+                  key={cat}
+                  onPress={() => {
+                    hapticTap();
+                    setFilter(cat);
+                  }}
+                  style={[styles.filterChip, filter === cat && styles.filterChipActive]}
+                >
+                  <Text
+                    style={[styles.filterText, filter === cat && styles.filterTextActive]}
+                  >
+                    {t(`addHabit.category${cat.charAt(0).toUpperCase() + cat.slice(1)}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
           {habitsQuery.isLoading ? (
             <View style={styles.habitList}>
               <HabitCardSkeleton />
@@ -112,8 +163,8 @@ export default function HomeScreen() {
             <EmptyState
               icon="add-circle-outline"
               emoji="✨"
-              title={t('home.emptyTitle')}
-              subtitle={t('home.empty')}
+              title={allHabits.length === 0 ? t('home.emptyTitle') : t('home.filterAll')}
+              subtitle={allHabits.length === 0 ? t('home.empty') : ''}
             />
           ) : (
             <View style={styles.habitList}>
@@ -191,6 +242,20 @@ function makeStyles(c: ColorPalette) {
       overflow: 'hidden',
     },
     section: { gap: Spacing.md },
+    filterRow: { gap: Spacing.sm, paddingVertical: 2 },
+    filterChip: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: 8,
+      borderRadius: Radius.full,
+      backgroundColor: c.surface.container,
+    },
+    filterChipActive: { backgroundColor: 'rgba(127,119,221,0.18)' },
+    filterText: {
+      fontFamily: FontFamily.manrope.semibold,
+      color: c.text.muted,
+      fontSize: 13,
+    },
+    filterTextActive: { color: c.primaryLight },
     habitList: { gap: Spacing.md },
     errorText: { color: c.error, textAlign: 'center', marginTop: Spacing.base },
   });

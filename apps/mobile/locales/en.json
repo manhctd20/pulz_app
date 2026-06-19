@@ -24,7 +24,21 @@
     "haveAccount": "Have an account? Sign in",
     "loginError": "Login failed",
     "registerError": "Register failed",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "forgotLink": "Forgot password?",
+    "forgotTitle": "Reset password",
+    "forgotSubtitle": "Enter your email — we'll send a reset code.",
+    "forgotEmailLabel": "Email",
+    "forgotSubmit": "Send code",
+    "forgotSent": "Sent! Check your email.",
+    "forgotDevTokenLabel": "Token (dev mode)",
+    "haveToken": "Already have token? Reset now",
+    "resetTitle": "Set new password",
+    "resetSubtitle": "Enter the token you received and your new password.",
+    "resetTokenLabel": "Token",
+    "resetNewPasswordLabel": "New password (≥ 8 chars)",
+    "resetSubmit": "Reset password",
+    "resetSuccess": "Reset done! Sign in again."
   },
   "tabs": {
     "home": "Home",
@@ -44,7 +58,8 @@
     "rank": "#{{rank}}",
     "empty": "Create your first habit to start",
     "emptyTitle": "No habits yet",
-    "errorLoading": "Could not load data"
+    "errorLoading": "Could not load data",
+    "filterAll": "All"
   },
   "groups": {
     "title": "My groups",
@@ -200,7 +215,15 @@
     "saveError": "Could not save, please retry",
     "delete": "Delete habit",
     "deleteTitle": "Delete habit?",
-    "deleteConfirm": "All check-in history will be lost. Cannot be undone."
+    "deleteConfirm": "All check-in history will be lost. Cannot be undone.",
+    "categoryLabel": "Category",
+    "categoryHealth": "Health",
+    "categoryLearning": "Learning",
+    "categoryMindfulness": "Mindfulness",
+    "categoryLifestyle": "Lifestyle",
+    "categoryOther": "Other",
+    "shieldLabel": "Streak Shield",
+    "shieldHint": "Protect your streak: allow missing one day without reset"
   },
   "habits": {
     "water": "Drink water",

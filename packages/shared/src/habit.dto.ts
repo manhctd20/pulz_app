@@ -3,6 +3,15 @@ import { z } from 'zod';
 export const HabitFrequencySchema = z.enum(['daily', 'weekly']);
 export type HabitFrequency = z.infer<typeof HabitFrequencySchema>;
 
+export const HabitCategorySchema = z.enum([
+  'health',
+  'learning',
+  'mindfulness',
+  'lifestyle',
+  'other',
+]);
+export type HabitCategory = z.infer<typeof HabitCategorySchema>;
+
 export const HabitSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -11,6 +20,8 @@ export const HabitSchema = z.object({
   frequency: z.string(),
   reminderTime: z.string().nullable(),
   groupId: z.string().nullable(),
+  category: HabitCategorySchema.nullable(),
+  streakShieldEnabled: z.boolean(),
   createdAt: z.string(),
 });
 export type Habit = z.infer<typeof HabitSchema>;
@@ -31,6 +42,8 @@ export const CreateHabitDtoSchema = z.object({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:mm')
     .optional(),
   groupId: z.string().optional(),
+  category: HabitCategorySchema.optional(),
+  streakShieldEnabled: z.boolean().optional(),
 });
 export type CreateHabitDto = z.infer<typeof CreateHabitDtoSchema>;
 

@@ -7,9 +7,11 @@ import { CurrentUser } from './current-user.decorator';
 import {
   ChangePasswordDto,
   DeleteAccountDto,
+  ForgotPasswordDto,
   LoginDto,
   RefreshDto,
   RegisterDto,
+  ResetPasswordDto,
   UpdateMeDto,
 } from './dto';
 import { JwtPayload } from './jwt.types';
@@ -45,6 +47,30 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token', description: 'Rate limit: 10 req/IP/phút' })
   refresh(@Body() dto: RefreshDto) {
     return this.auth.refresh(dto);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Yêu cầu đặt lại mật khẩu — luôn trả ok để tránh user enumeration',
+    description: 'Rate limit: 3 req/IP/phút. Dev mode (NODE_ENV != production) trả devToken trong response.',
+  })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đặt lại mật khẩu bằng token',
+    description: 'Token hết hạn sau 30 phút. Rate limit: 5 req/IP/phút.',
+  })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto);
   }
 
   @Get('me')

@@ -16,25 +16,39 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  habits      Habit[]
-  memberships GroupMember[]
-  ownedGroups Group[]       @relation("GroupOwner")
-  checkIns    CheckIn[]
+  habits         Habit[]
+  memberships    GroupMember[]
+  ownedGroups    Group[]              @relation("GroupOwner")
+  checkIns       CheckIn[]
+  resetTokens    PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  token     String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Habit {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  emoji        String
-  color        String?
-  frequency    String   @default("daily")
-  reminderTime String?
-  groupId      String?
-  group        Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String
+  emoji               String
+  color               String?
+  frequency           String   @default("daily")
+  reminderTime        String?
+  groupId             String?
+  group               Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  category            String?  // health | learning | mindfulness | lifestyle | other
+  streakShieldEnabled Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   checkIns CheckIn[]
 

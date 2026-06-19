@@ -48,3 +48,21 @@ export const DeleteAccountDtoSchema = z.object({
   password: z.string().min(1),
 });
 export type DeleteAccountDto = z.infer<typeof DeleteAccountDtoSchema>;
+
+export const ForgotPasswordDtoSchema = z.object({
+  email: z.string().email(),
+});
+export type ForgotPasswordDto = z.infer<typeof ForgotPasswordDtoSchema>;
+
+export const ResetPasswordDtoSchema = z.object({
+  token: z.string().min(8),
+  newPassword: z.string().min(8).max(72),
+});
+export type ResetPasswordDto = z.infer<typeof ResetPasswordDtoSchema>;
+
+// Dev convenience: BE trả token thẳng khi NODE_ENV != production để test không cần email.
+export const ForgotPasswordResponseSchema = z.object({
+  ok: z.literal(true),
+  devToken: z.string().optional(),
+});
+export type ForgotPasswordResponse = z.infer<typeof ForgotPasswordResponseSchema>;

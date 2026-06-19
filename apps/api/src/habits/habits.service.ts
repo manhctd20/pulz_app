@@ -15,17 +15,43 @@ function addDays(d: Date, n: number): Date {
   return r;
 }
 
-function calcStreak(checkIns: Pick<CheckIn, 'date' | 'completed'>[], today: Date): number {
+function calcStreak(
+  checkIns: Pick<CheckIn, 'date' | 'completed'>[],
+  today: Date,
+  shieldEnabled: boolean,
+): number {
   const done = new Set(
     checkIns.filter((c) => c.completed).map((c) => c.date.toISOString().slice(0, 10)),
   );
   let streak = 0;
   let cursor = today;
-  while (done.has(cursor.toISOString().slice(0, 10))) {
-    streak++;
-    cursor = addDays(cursor, -1);
+  let shieldUsed = false;
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (done.has(key)) {
+      streak++;
+      cursor = addDays(cursor, -1);
+      continue;
+    }
+    // Cho phép 1 ngày miss được "che" bằng shield (chỉ 1 lần / streak).
+    if (shieldEnabled && !shieldUsed && streak > 0 && cursor.getTime() !== today.getTime()) {
+      shieldUsed = true;
+      cursor = addDays(cursor, -1);
+      continue;
+    }
+    break;
   }
   return streak;
+}
+
+const HABIT_CATEGORIES = ['health', 'learning', 'mindfulness', 'lifestyle', 'other'] as const;
+type HabitCategory = (typeof HABIT_CATEGORIES)[number];
+
+function normalizeCategory(value: string | null): HabitCategory | null {
+  if (!value) return null;
+  return (HABIT_CATEGORIES as readonly string[]).includes(value)
+    ? (value as HabitCategory)
+    : null;
 }
 
 function serializeHabit(h: Habit, doneToday: boolean, currentStreak: number) {
@@ -37,6 +63,8 @@ function serializeHabit(h: Habit, doneToday: boolean, currentStreak: number) {
     frequency: h.frequency,
     reminderTime: h.reminderTime,
     groupId: h.groupId,
+    category: normalizeCategory(h.category),
+    streakShieldEnabled: h.streakShieldEnabled,
     createdAt: h.createdAt.toISOString(),
     doneToday,
     currentStreak,
@@ -60,7 +88,7 @@ export class HabitsService {
       },
     });
     return habits.map((h) => {
-      const streak = calcStreak(h.checkIns, today);
+      const streak = calcStreak(h.checkIns, today, h.streakShieldEnabled);
       const todayKey = today.toISOString().slice(0, 10);
       const doneToday = h.checkIns.some(
         (c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey,
@@ -79,6 +107,8 @@ export class HabitsService {
         frequency: dto.frequency,
         reminderTime: dto.reminderTime,
         groupId: dto.groupId,
+        category: dto.category,
+        streakShieldEnabled: dto.streakShieldEnabled ?? false,
       },
     });
     return serializeHabit(habit, false, 0);
@@ -95,7 +125,7 @@ export class HabitsService {
       where: { habitId, date: { gte: addDays(today, -60) } },
       select: { date: true, completed: true },
     });
-    const streak = calcStreak(checkIns, today);
+    const streak = calcStreak(checkIns, today, habit.streakShieldEnabled);
     const todayKey = today.toISOString().slice(0, 10);
     const doneToday = checkIns.some(
       (c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey,
@@ -111,6 +141,7 @@ export class HabitsService {
 
   async history(userId: string, habitId: string, days: number) {
     await this.assertOwned(userId, habitId);
+    const habit = await this.prisma.habit.findUniqueOrThrow({ where: { id: habitId } });
     const today = todayUtc();
     const limit = Math.min(Math.max(days, 7), 365);
     const start = addDays(today, -(limit - 1));
@@ -128,7 +159,7 @@ export class HabitsService {
       entries.push({ date: key, completed: doneSet.has(key) });
     }
 
-    const currentStreak = calcStreak(checkIns, today);
+    const currentStreak = calcStreak(checkIns, today, habit.streakShieldEnabled);
     let longestStreak = 0;
     let running = 0;
     for (const e of entries) {
@@ -162,11 +193,12 @@ export class HabitsService {
       });
     }
 
+    const habit = await this.prisma.habit.findUniqueOrThrow({ where: { id: habitId } });
     const checkIns = await this.prisma.checkIn.findMany({
       where: { habitId, date: { gte: addDays(today, -60) } },
       select: { date: true, completed: true },
     });
-    const streak = calcStreak(checkIns, today);
+    const streak = calcStreak(checkIns, today, habit.streakShieldEnabled);
     const todayKey = today.toISOString().slice(0, 10);
     const doneToday = checkIns.some(
       (c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey,

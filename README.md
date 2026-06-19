@@ -134,6 +134,7 @@ Trên iPhone:
 - JWT access + refresh token, auto-refresh khi access hết hạn (axios interceptor)
 - Token persist qua `expo-secure-store` (an toàn hơn AsyncStorage)
 - Logout với confirm dialog
+- **Forgot / Reset password** — request reset code qua email, token base64url 24-byte hết hạn 30 phút, dùng 1 lần. Email gửi qua Resend HTTP API; nếu `RESEND_API_KEY` trống, BE log token và trả `devToken` trong response (chỉ khi `NODE_ENV !== 'production'`). Route public, rate limit 3/min cho forgot và 5/min cho reset
 
 ### Home
 - Greeting cá nhân hoá theo `user.displayName`
@@ -142,9 +143,10 @@ Trên iPhone:
 - Streak badge "🔥 X ngày"
 
 ### Habits
-- Add Habit: emoji picker (9), color picker (5), frequency (daily/weekly), reminder HH:mm, chọn group
+- Add Habit: emoji picker (9), color picker (5), frequency (daily/weekly), reminder HH:mm, chọn group, **category** (health/learning/mindfulness/lifestyle/other), **Streak Shield** toggle
 - Check-in idempotent theo ngày UTC (toggle on/off)
-- Tự động tính streak (consecutive days)
+- Tự động tính streak (consecutive days). Khi Streak Shield bật, cho phép lỡ tối đa 1 ngày trong chuỗi mà streak không reset (mỗi chuỗi chỉ shield 1 lần)
+- Home filter chips theo category (chỉ render những category đang được dùng)
 
 ### Groups
 - Tạo nhóm với auto-gen code 6 ký tự (skip ký tự dễ nhầm I/O/0/1)
@@ -206,9 +208,13 @@ Project có **slash command custom** để smoke test toàn bộ BE + security +
 **Infrastructure (C0):**
 - Swagger reachable at `/docs` + `/docs-json` returns valid OpenAPI 3.0
 
-**Functional (20 checks):**
+**Functional (22 checks):**
 - C1-C4 Auth: login / me / refresh / reject wrong password
+- C4b PATCH /auth/me + change-password
+- C4c DELETE /auth/me cascade owned groups
+- **C4d Password reset**: forgot trả devToken (dev mode), reset đổi password thành công, token single-use (reuse → 400), forgot với email không tồn tại vẫn 200 (không leak)
 - C5-C8 Habits: list / create / checkin toggle 3 lần (idempotent) / delete / history 30 ngày
+- **C8c Category + Streak Shield**: round-trip create/patch giữ nguyên field, zod reject category invalid
 - C9-C13 Groups: list / create với code 6 ký tự / Lan join + duplicate 409 / detail structure / Lan leave + Minh owner-can't-leave + delete / **rename owner-only** / **kick member owner-only**
 - C14 Leaderboard: 3 period với rank đúng
 - C15 Authz: 401 không token, 403 không phải member
@@ -296,6 +302,8 @@ Tất cả endpoint dùng prefix `/api/v1`. Auth bằng header `Authorization: B
 | POST | `/auth/register` | `{email, password, displayName}` | `{accessToken, refreshToken, user}` | public |
 | POST | `/auth/login` | `{email, password}` | `{accessToken, refreshToken, user}` | public |
 | POST | `/auth/refresh` | `{refreshToken}` | `{accessToken}` | public |
+| POST | `/auth/forgot-password` | `{email}` | `{ok, devToken?}` (devToken chỉ ở `NODE_ENV != production`) | public, rate 3/min |
+| POST | `/auth/reset-password` | `{token, newPassword}` | `{ok}` | public, rate 5/min |
 | GET | `/auth/me` | — | `User` | bearer |
 | PATCH | `/auth/me` | `{displayName?, avatarUrl?}` | `User` | bearer |
 | POST | `/auth/change-password` | `{currentPassword, newPassword}` | `{ok}` | bearer, rate 5/min |
@@ -427,13 +435,14 @@ npx tsx prisma\seed.ts
 - **Toast component**: `<ToastProvider>` global + `useToast()` hook, 3 variant (success/info/error), slide-down animation, auto dismiss 2.2s. Dùng cho copy invite code, save profile, change password success
 - **GroupCard avatar initials**: BE trả `memberPreviews: [{initial, avatarUrl}]` thay vì `memberAvatars: string[]`. FE hiển thị chữ cái đầu tên member trên avatar gradient
 - **Redesign Profile + Leaderboard**: Profile hero gradient avatar + hero streak card + achievement gradient/locked states + setting icon bubbles; Leaderboard "Your rank" card với gap-to-leader, podium gold/silver/bronze (medal emoji 🥇🥈🥉 + #1 to hơn), rank list highlight user của mình
+- **Forgot / Reset password**: Prisma `PasswordResetToken` model (token + userId + expiresAt + usedAt + cascade delete on user), `EmailService` dùng Resend HTTP API (no SDK) với fallback log khi `RESEND_API_KEY` chưa set, screens `forgot-password` + `reset-password` với deep-link cùng token, route public + throttle (3/min forgot, 5/min reset), forgot luôn trả `ok: true` để không leak user existence
+- **Habit categories + Streak Shield**: Habit schema thêm `category` (enum 5: health/learning/mindfulness/lifestyle/other) + `streakShieldEnabled` (boolean), Add Habit form có chip picker category + Switch shield (kèm hint), `calcStreak` cho phép 1 ngày lỡ duy nhất trong chuỗi khi shield bật, Home thêm filter chips horizontal scroll trên habits section (chỉ hiển thị category đang dùng)
 
 ### ⏳ Next (đề xuất, chưa cam kết)
 - **Avatar upload** (BE: presigned S3 URL hoặc Cloudinary; FE: image picker)
-- **Push notification** (`expo-notifications`) cho reminder thói quen
-- **Edit habit** trong Add-Habit screen (reuse form với prop initial)
-- **Edit group name** + xoá member (chỉ owner)
-- **Stats screen** chi tiết: heatmap streak (calendar grid), weekly/monthly summary
+- **Habit notes** (nhật ký mỗi check-in với 280 ký tự)
+- **Sharing stats**: chia sẻ heatmap habit qua Share API
+- **Group habit assignment**: chủ nhóm assign 1 habit chung cho cả nhóm
 - **Tests automation**: Jest unit cho service + Detox e2e cho FE
 - **CI/CD**: GitHub Actions chạy `/test-pulz` trên PR
 - **Deploy**: Railway/Render cho API, EAS build cho mobile
