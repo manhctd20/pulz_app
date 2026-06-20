@@ -174,6 +174,7 @@ export default function HomeScreen() {
                   emoji={habit.emoji}
                   name={habit.name}
                   color={habit.color ?? undefined}
+                  isShared={habit.isShared}
                   streakDays={habit.currentStreak}
                   done={habit.doneToday}
                   onToggle={() => onToggleHabit(habit.id, habit.doneToday)}

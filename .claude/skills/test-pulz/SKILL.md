@@ -159,6 +159,17 @@ Expect: `$h.id` không null, `$h.currentStreak -eq 0`, `$h.doneToday -eq $false`
 - POST `/habits` body `{"name":"Bad cat","emoji":"⚠️","frequency":"daily","category":"INVALID_CAT"}` → expect 400 (zod enum reject)
 - Cleanup: DELETE habit vừa tạo
 
+**C8d: Group habit assignment (isShared)**
+Setup: Minh (owner DEMO01), Lan (member DEMO01).
+- Minh POST `/groups/DEMO01_ID/habits` body `{"name":"Uống 2L nước","emoji":"💧","frequency":"daily"}`
+- Expect: response `isShared === true`, `groupId === DEMO01_ID`. Save `$sharedId`.
+- Lan POST `/groups/DEMO01_ID/habits` body cùng dạng → expect 403 (member, không phải owner).
+- Lan GET `/habits` → response phải có habit `$sharedId` (vì Lan là member). Minh GET `/habits` cũng phải có.
+- Lan POST `/habits/$sharedId/checkin` → expect 200, `done=true, currentStreak=1`.
+- Minh POST `/habits/$sharedId/checkin` → expect 200 độc lập với Lan (cùng habit, cùng ngày nhưng khác userId).
+- Lan POST `/habits/$sharedId` (DELETE) → expect 403 (chỉ owner). Minh DELETE → 200.
+- Cleanup tự động khi DELETE.
+
 ### Groups (C9–C13)
 
 **C9: List groups của Minh**

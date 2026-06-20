@@ -6,5 +6,6 @@ import { HabitsService } from './habits.service';
 @Module({
   controllers: [HabitsController],
   providers: [HabitsService],
+  exports: [HabitsService],
 })
 export class HabitsModule {}

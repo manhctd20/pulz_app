@@ -59,7 +59,8 @@
     "empty": "Create your first habit to start",
     "emptyTitle": "No habits yet",
     "errorLoading": "Could not load data",
-    "filterAll": "All"
+    "filterAll": "All",
+    "sharedBadge": "Group habit"
   },
   "groups": {
     "title": "My groups",
@@ -97,7 +98,8 @@
     "deleteGroup": "Delete group",
     "kickMember": "Remove from group",
     "kickConfirm": "Remove {{name}} from the group?",
-    "ownerActions": "Owner actions"
+    "ownerActions": "Owner actions",
+    "addShared": "New group habit"
   },
   "habitDetail": {
     "title": "Habit detail",
@@ -200,6 +202,7 @@
   "addHabit": {
     "title": "Add new habit",
     "editTitle": "Edit habit",
+    "sharedTitle": "New group habit",
     "nameLabel": "Habit name",
     "namePlaceholder": "e.g. Read 15 min",
     "emojiLabel": "Emoji",

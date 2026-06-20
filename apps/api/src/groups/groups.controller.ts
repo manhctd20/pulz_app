@@ -13,6 +13,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.types';
+import { CreateHabitDto } from '../habits/dto';
+import { HabitsService } from '../habits/habits.service';
 import { CreateGroupDto, JoinGroupDto, UpdateGroupDto } from './dto';
 import { GroupsService } from './groups.service';
 
@@ -20,7 +22,10 @@ import { GroupsService } from './groups.service';
 @ApiBearerAuth('access-token')
 @Controller('groups')
 export class GroupsController {
-  constructor(private groups: GroupsService) {}
+  constructor(
+    private groups: GroupsService,
+    private habits: HabitsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List nhóm user thuộc (kèm aggregate today + avatars)' })
@@ -69,6 +74,16 @@ export class GroupsController {
     @Body() dto: UpdateGroupDto,
   ) {
     return this.groups.update(user.sub, id, dto);
+  }
+
+  @Post(':id/habits')
+  @ApiOperation({ summary: 'Tạo habit chung cho cả nhóm (chỉ owner)' })
+  createSharedHabit(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') groupId: string,
+    @Body() dto: CreateHabitDto,
+  ) {
+    return this.habits.createShared(user.sub, groupId, dto);
   }
 
   @Delete(':id/members/:userId')

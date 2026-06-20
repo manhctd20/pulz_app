@@ -153,37 +153,40 @@ export class GroupsService {
 
     const memberships = await this.prisma.groupMember.findMany({
       where: { groupId },
+      include: { user: true },
+      orderBy: { joinedAt: 'asc' },
+    });
+    const memberIds = memberships.map((m) => m.userId);
+
+    // Mọi habit gắn groupId (personal hoặc shared) + check-ins 60 ngày của các member.
+    const groupHabits = await this.prisma.habit.findMany({
+      where: { groupId },
       include: {
-        user: {
-          include: {
-            habits: {
-              where: { groupId },
-              include: {
-                checkIns: {
-                  where: { date: { gte: addDays(today, -60) } },
-                  select: { date: true, completed: true },
-                },
-              },
-            },
-          },
+        checkIns: {
+          where: { userId: { in: memberIds }, date: { gte: addDays(today, -60) } },
+          select: { userId: true, date: true, completed: true },
         },
       },
-      orderBy: { joinedAt: 'asc' },
     });
 
     const todayKey = today.toISOString().slice(0, 10);
 
     const members = memberships.map((m) => {
-      const habits = m.user.habits;
+      const personalHabits = groupHabits.filter(
+        (h) => !h.isShared && h.userId === m.userId,
+      );
+      const sharedHabits = groupHabits.filter((h) => h.isShared);
+      const myHabits = [...personalHabits, ...sharedHabits];
+
       const totalDates = new Set<string>();
       let todayDone = 0;
-      let todayTotal = habits.length;
-      for (const h of habits) {
-        const hasTodayDone = h.checkIns.some(
-          (c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey,
-        );
-        if (hasTodayDone) todayDone++;
-        for (const c of h.checkIns) {
+      const todayTotal = myHabits.length;
+      for (const h of myHabits) {
+        const myCheckIns = h.checkIns.filter((c) => c.userId === m.userId);
+        if (myCheckIns.some((c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey)) {
+          todayDone++;
+        }
+        for (const c of myCheckIns) {
           if (c.completed) totalDates.add(c.date.toISOString().slice(0, 10));
         }
       }
@@ -208,36 +211,23 @@ export class GroupsService {
       };
     });
 
-    const sharedHabitsRaw = await this.prisma.habit.findMany({
-      where: { groupId },
-      include: {
-        checkIns: { where: { date: today }, select: { completed: true } },
-      },
-    });
     const memberCount = members.length;
-    const habitsByName = new Map<string, { id: string; name: string; emoji: string; doneCount: number }>();
-    for (const h of sharedHabitsRaw) {
-      const key = `${h.name}__${h.emoji}`;
-      const doneToday = h.checkIns.some((c) => c.completed);
-      const cur = habitsByName.get(key);
-      if (cur) {
-        if (doneToday) cur.doneCount++;
-      } else {
-        habitsByName.set(key, {
+    const sharedHabits = groupHabits
+      .filter((h) => h.isShared)
+      .map((h) => {
+        const doneUserIds = new Set(
+          h.checkIns
+            .filter((c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey)
+            .map((c) => c.userId),
+        );
+        return {
           id: h.id,
           name: h.name,
           emoji: h.emoji,
-          doneCount: doneToday ? 1 : 0,
-        });
-      }
-    }
-    const sharedHabits = Array.from(habitsByName.values()).map((h) => ({
-      id: h.id,
-      name: h.name,
-      emoji: h.emoji,
-      doneCount: h.doneCount,
-      totalMembers: memberCount,
-    }));
+          doneCount: doneUserIds.size,
+          totalMembers: memberCount,
+        };
+      });
 
     return { ...summary, members, sharedHabits };
   }
@@ -256,6 +246,7 @@ export class GroupsService {
     });
 
     const today = todayUtc();
+    const memberCount = group._count.members;
     const habits = await this.prisma.habit.findMany({
       where: { groupId },
       include: { checkIns: { where: { date: today }, select: { completed: true } } },
@@ -264,7 +255,7 @@ export class GroupsService {
       (sum, h) => sum + h.checkIns.filter((c) => c.completed).length,
       0,
     );
-    const todayTotal = habits.length;
+    const todayTotal = habits.reduce((sum, h) => sum + (h.isShared ? memberCount : 1), 0);
 
     return {
       id: group.id,

@@ -175,7 +175,21 @@ export default function GroupDetailScreen() {
         </GlassCard>
 
         <View style={styles.section}>
-          <Text style={Typography.title}>{t('groupDetail.sharedHabitsTitle')}</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={Typography.title}>{t('groupDetail.sharedHabitsTitle')}</Text>
+            {isOwner && (
+              <Pressable
+                onPress={() => router.push(`/add-habit?sharedGroupId=${id}`)}
+                hitSlop={10}
+                style={styles.addSharedBtn}
+              >
+                <Ionicons name="add" size={18} color={colors.primaryLight} />
+                <Text style={[Typography.label, { color: colors.primaryLight }]}>
+                  {t('groupDetail.addShared')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
           {group.sharedHabits.length === 0 ? (
             <Text style={[Typography.bodySm, { color: colors.text.muted }]}>
               {t('groupDetail.noSharedHabits')}
@@ -348,6 +362,20 @@ function makeStyles(c: ColorPalette) {
     },
     progressBlock: { gap: Spacing.xs, marginTop: Spacing.xs },
     section: { gap: Spacing.md },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    addSharedBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: Radius.full,
+      backgroundColor: 'rgba(127,119,221,0.15)',
+    },
     list: { gap: Spacing.sm },
     habitRow: {
       flexDirection: 'row',

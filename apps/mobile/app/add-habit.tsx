@@ -23,6 +23,7 @@ import { Radius, Spacing } from '../constants/spacing';
 import { FontFamily, Typography } from '../constants/typography';
 import {
   useCreateHabit,
+  useCreateSharedHabit,
   useDeleteHabit,
   useGroups,
   useHabits,
@@ -42,9 +43,11 @@ const CATEGORIES: HabitCategory[] = [
 
 export default function AddHabitScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ habitId?: string }>();
+  const params = useLocalSearchParams<{ habitId?: string; sharedGroupId?: string }>();
   const editingId = params.habitId;
+  const sharedGroupId = params.sharedGroupId;
   const isEdit = !!editingId;
+  const isCreateShared = !isEdit && !!sharedGroupId;
 
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -52,6 +55,7 @@ export default function AddHabitScreen() {
   const groupsQuery = useGroups();
   const habitsQuery = useHabits();
   const createMutation = useCreateHabit();
+  const createSharedMutation = useCreateSharedHabit();
   const updateMutation = useUpdateHabit();
   const deleteMutation = useDeleteHabit();
 
@@ -84,7 +88,11 @@ export default function AddHabitScreen() {
     setHydrated(true);
   }, [isEdit, hydrated, existing]);
 
-  const busy = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  const busy =
+    createMutation.isPending ||
+    createSharedMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
 
   const onSave = async () => {
     setError(null);
@@ -95,12 +103,14 @@ export default function AddHabitScreen() {
         color,
         frequency,
         reminderTime: reminderTime.trim() || undefined,
-        groupId,
+        groupId: isCreateShared ? sharedGroupId : groupId,
         category,
         streakShieldEnabled: shield,
       };
       if (isEdit && editingId) {
         await updateMutation.mutateAsync({ id: editingId, dto });
+      } else if (isCreateShared && sharedGroupId) {
+        await createSharedMutation.mutateAsync({ groupId: sharedGroupId, dto });
       } else {
         await createMutation.mutateAsync(dto);
       }
@@ -136,7 +146,11 @@ export default function AddHabitScreen() {
           <Ionicons name="close" size={24} color={colors.text.primary} />
         </Pressable>
         <Text style={Typography.title}>
-          {isEdit ? t('addHabit.editTitle') : t('addHabit.title')}
+          {isEdit
+            ? t('addHabit.editTitle')
+            : isCreateShared
+              ? t('addHabit.sharedTitle')
+              : t('addHabit.title')}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -227,30 +241,41 @@ export default function AddHabitScreen() {
             />
           </View>
 
-          <View style={styles.section}>
-            <Text style={[Typography.label, styles.label]}>{t('addHabit.groupLabel')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              <Pressable
-                onPress={() => setGroupId(undefined)}
-                style={[styles.chip, !groupId && styles.chipActive]}
-              >
-                <Text style={[styles.chipText, !groupId && styles.chipTextActive]}>
-                  {t('addHabit.groupNone')}
+          {isCreateShared ? (
+            <View style={styles.section}>
+              <Text style={[Typography.label, styles.label]}>{t('addHabit.groupLabel')}</Text>
+              <View style={[styles.chip, styles.chipActive, { alignSelf: 'flex-start' }]}>
+                <Text style={[styles.chipText, styles.chipTextActive]}>
+                  👥 {groupsQuery.data?.find((g) => g.id === sharedGroupId)?.name ?? '...'}
                 </Text>
-              </Pressable>
-              {(groupsQuery.data ?? []).map((g) => (
+              </View>
+            </View>
+          ) : (
+            <View style={styles.section}>
+              <Text style={[Typography.label, styles.label]}>{t('addHabit.groupLabel')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 <Pressable
-                  key={g.id}
-                  onPress={() => setGroupId(g.id)}
-                  style={[styles.chip, groupId === g.id && styles.chipActive]}
+                  onPress={() => setGroupId(undefined)}
+                  style={[styles.chip, !groupId && styles.chipActive]}
                 >
-                  <Text style={[styles.chipText, groupId === g.id && styles.chipTextActive]}>
-                    {g.name}
+                  <Text style={[styles.chipText, !groupId && styles.chipTextActive]}>
+                    {t('addHabit.groupNone')}
                   </Text>
                 </Pressable>
-              ))}
-            </ScrollView>
-          </View>
+                {(groupsQuery.data ?? []).map((g) => (
+                  <Pressable
+                    key={g.id}
+                    onPress={() => setGroupId(g.id)}
+                    style={[styles.chip, groupId === g.id && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, groupId === g.id && styles.chipTextActive]}>
+                      {g.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           <View style={styles.section}>
             <Text style={[Typography.label, styles.label]}>{t('addHabit.categoryLabel')}</Text>

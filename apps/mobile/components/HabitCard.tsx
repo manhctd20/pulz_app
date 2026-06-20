@@ -14,11 +14,21 @@ type Props = {
   streakDays: number;
   done: boolean;
   color?: string;
+  isShared?: boolean;
   onToggle: () => void;
   onPress?: () => void;
 };
 
-export function HabitCard({ emoji, name, streakDays, done, color, onToggle, onPress }: Props) {
+export function HabitCard({
+  emoji,
+  name,
+  streakDays,
+  done,
+  color,
+  isShared,
+  onToggle,
+  onPress,
+}: Props) {
   const { t } = useTranslation();
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -35,7 +45,16 @@ export function HabitCard({ emoji, name, streakDays, done, color, onToggle, onPr
         <Text style={styles.emoji}>{emoji}</Text>
       </View>
       <View style={styles.info}>
-        <Text style={Typography.bodyLgMedium}>{name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={Typography.bodyLgMedium} numberOfLines={1}>
+            {name}
+          </Text>
+          {isShared && (
+            <View style={styles.sharedBadge}>
+              <Text style={styles.sharedBadgeText}>👥 {t('home.sharedBadge')}</Text>
+            </View>
+          )}
+        </View>
         <Text style={Typography.bodySm}>{t('home.streakSuffix', { days: streakDays })}</Text>
       </View>
       <Pressable
@@ -82,6 +101,18 @@ function makeStyles(c: ColorPalette) {
     },
     emoji: { fontSize: 22 },
     info: { flex: 1, gap: 2 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    sharedBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: Radius.full,
+      backgroundColor: 'rgba(127,119,221,0.18)',
+    },
+    sharedBadgeText: {
+      fontSize: 11,
+      color: c.primaryLight,
+      fontFamily: 'Manrope_600SemiBold',
+    },
     check: {
       width: 22,
       height: 22,

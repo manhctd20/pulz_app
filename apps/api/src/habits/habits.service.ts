@@ -33,7 +33,6 @@ function calcStreak(
       cursor = addDays(cursor, -1);
       continue;
     }
-    // Cho phép 1 ngày miss được "che" bằng shield (chỉ 1 lần / streak).
     if (shieldEnabled && !shieldUsed && streak > 0 && cursor.getTime() !== today.getTime()) {
       shieldUsed = true;
       cursor = addDays(cursor, -1);
@@ -65,6 +64,7 @@ function serializeHabit(h: Habit, doneToday: boolean, currentStreak: number) {
     groupId: h.groupId,
     category: normalizeCategory(h.category),
     streakShieldEnabled: h.streakShieldEnabled,
+    isShared: h.isShared,
     createdAt: h.createdAt.toISOString(),
     doneToday,
     currentStreak,
@@ -77,12 +77,24 @@ export class HabitsService {
 
   async list(userId: string) {
     const today = todayUtc();
+    const sharedGroupIds = (
+      await this.prisma.groupMember.findMany({
+        where: { userId },
+        select: { groupId: true },
+      })
+    ).map((m) => m.groupId);
+
     const habits = await this.prisma.habit.findMany({
-      where: { userId },
+      where: {
+        OR: [
+          { userId, isShared: false },
+          { isShared: true, groupId: { in: sharedGroupIds } },
+        ],
+      },
       orderBy: { createdAt: 'asc' },
       include: {
         checkIns: {
-          where: { date: { gte: addDays(today, -60) } },
+          where: { userId, date: { gte: addDays(today, -60) } },
           select: { date: true, completed: true },
         },
       },
@@ -109,20 +121,51 @@ export class HabitsService {
         groupId: dto.groupId,
         category: dto.category,
         streakShieldEnabled: dto.streakShieldEnabled ?? false,
+        isShared: false,
+      },
+    });
+    return serializeHabit(habit, false, 0);
+  }
+
+  async createShared(userId: string, groupId: string, dto: CreateHabitDto) {
+    const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) throw new NotFoundException('Group not found');
+    if (group.ownerId !== userId) throw new ForbiddenException('Owner only');
+    const habit = await this.prisma.habit.create({
+      data: {
+        userId,
+        name: dto.name,
+        emoji: dto.emoji,
+        color: dto.color,
+        frequency: dto.frequency,
+        reminderTime: dto.reminderTime,
+        groupId,
+        category: dto.category,
+        streakShieldEnabled: dto.streakShieldEnabled ?? false,
+        isShared: true,
       },
     });
     return serializeHabit(habit, false, 0);
   }
 
   async update(userId: string, habitId: string, dto: UpdateHabitDto) {
-    await this.assertOwned(userId, habitId);
+    const existing = await this.assertCanModify(userId, habitId);
     const habit = await this.prisma.habit.update({
       where: { id: habitId },
-      data: dto,
+      data: {
+        name: dto.name,
+        emoji: dto.emoji,
+        color: dto.color,
+        frequency: dto.frequency,
+        reminderTime: dto.reminderTime,
+        groupId: existing.isShared ? existing.groupId : dto.groupId,
+        category: dto.category,
+        streakShieldEnabled: dto.streakShieldEnabled,
+      },
     });
     const today = todayUtc();
     const checkIns = await this.prisma.checkIn.findMany({
-      where: { habitId, date: { gte: addDays(today, -60) } },
+      where: { habitId, userId, date: { gte: addDays(today, -60) } },
       select: { date: true, completed: true },
     });
     const streak = calcStreak(checkIns, today, habit.streakShieldEnabled);
@@ -134,19 +177,18 @@ export class HabitsService {
   }
 
   async remove(userId: string, habitId: string) {
-    await this.assertOwned(userId, habitId);
+    await this.assertCanModify(userId, habitId);
     await this.prisma.habit.delete({ where: { id: habitId } });
     return { ok: true };
   }
 
   async history(userId: string, habitId: string, days: number) {
-    await this.assertOwned(userId, habitId);
-    const habit = await this.prisma.habit.findUniqueOrThrow({ where: { id: habitId } });
+    const habit = await this.assertCanCheck(userId, habitId);
     const today = todayUtc();
     const limit = Math.min(Math.max(days, 7), 365);
     const start = addDays(today, -(limit - 1));
     const checkIns = await this.prisma.checkIn.findMany({
-      where: { habitId, date: { gte: start } },
+      where: { habitId, userId, date: { gte: start } },
       select: { date: true, completed: true },
     });
     const doneSet = new Set(
@@ -175,16 +217,16 @@ export class HabitsService {
   }
 
   async toggleCheckIn(userId: string, habitId: string) {
-    await this.assertOwned(userId, habitId);
+    const habit = await this.assertCanCheck(userId, habitId);
     const today = todayUtc();
 
     const existing = await this.prisma.checkIn.findUnique({
-      where: { habitId_date: { habitId, date: today } },
+      where: { habitId_userId_date: { habitId, userId, date: today } },
     });
 
     if (existing) {
       await this.prisma.checkIn.update({
-        where: { habitId_date: { habitId, date: today } },
+        where: { habitId_userId_date: { habitId, userId, date: today } },
         data: { completed: !existing.completed },
       });
     } else {
@@ -193,9 +235,8 @@ export class HabitsService {
       });
     }
 
-    const habit = await this.prisma.habit.findUniqueOrThrow({ where: { id: habitId } });
     const checkIns = await this.prisma.checkIn.findMany({
-      where: { habitId, date: { gte: addDays(today, -60) } },
+      where: { habitId, userId, date: { gte: addDays(today, -60) } },
       select: { date: true, completed: true },
     });
     const streak = calcStreak(checkIns, today, habit.streakShieldEnabled);
@@ -211,9 +252,33 @@ export class HabitsService {
     };
   }
 
-  private async assertOwned(userId: string, habitId: string) {
+  private async assertCanCheck(userId: string, habitId: string): Promise<Habit> {
     const habit = await this.prisma.habit.findUnique({ where: { id: habitId } });
     if (!habit) throw new NotFoundException('Habit not found');
-    if (habit.userId !== userId) throw new ForbiddenException('Not your habit');
+    if (!habit.isShared) {
+      if (habit.userId !== userId) throw new ForbiddenException('Not your habit');
+      return habit;
+    }
+    if (!habit.groupId) throw new ForbiddenException('Shared habit missing group');
+    const member = await this.prisma.groupMember.findUnique({
+      where: { groupId_userId: { groupId: habit.groupId, userId } },
+    });
+    if (!member) throw new ForbiddenException('Not a group member');
+    return habit;
+  }
+
+  private async assertCanModify(userId: string, habitId: string): Promise<Habit> {
+    const habit = await this.prisma.habit.findUnique({ where: { id: habitId } });
+    if (!habit) throw new NotFoundException('Habit not found');
+    if (!habit.isShared) {
+      if (habit.userId !== userId) throw new ForbiddenException('Not your habit');
+      return habit;
+    }
+    if (!habit.groupId) throw new ForbiddenException('Shared habit missing group');
+    const group = await this.prisma.group.findUnique({ where: { id: habit.groupId } });
+    if (!group || group.ownerId !== userId) {
+      throw new ForbiddenException('Owner only');
+    }
+    return habit;
   }
 }

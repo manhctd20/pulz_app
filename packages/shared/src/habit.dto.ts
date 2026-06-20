@@ -22,6 +22,7 @@ export const HabitSchema = z.object({
   groupId: z.string().nullable(),
   category: HabitCategorySchema.nullable(),
   streakShieldEnabled: z.boolean(),
+  isShared: z.boolean(),
   createdAt: z.string(),
 });
 export type Habit = z.infer<typeof HabitSchema>;

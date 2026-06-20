@@ -59,7 +59,8 @@
     "empty": "Tạo thói quen đầu tiên của bạn",
     "emptyTitle": "Chưa có thói quen nào",
     "errorLoading": "Không tải được dữ liệu",
-    "filterAll": "Tất cả"
+    "filterAll": "Tất cả",
+    "sharedBadge": "Habit nhóm"
   },
   "groups": {
     "title": "Nhóm của tôi",
@@ -97,7 +98,8 @@
     "deleteGroup": "Xoá nhóm",
     "kickMember": "Xoá khỏi nhóm",
     "kickConfirm": "Xoá {{name}} khỏi nhóm?",
-    "ownerActions": "Hành động chủ nhóm"
+    "ownerActions": "Hành động chủ nhóm",
+    "addShared": "Tạo habit chung"
   },
   "habitDetail": {
     "title": "Chi tiết thói quen",
@@ -200,6 +202,7 @@
   "addHabit": {
     "title": "Thêm thói quen mới",
     "editTitle": "Sửa thói quen",
+    "sharedTitle": "Tạo habit chung cho nhóm",
     "nameLabel": "Tên thói quen",
     "namePlaceholder": "Ví dụ: Đọc sách 15 phút",
     "emojiLabel": "Biểu tượng",

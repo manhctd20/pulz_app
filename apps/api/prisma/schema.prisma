@@ -47,6 +47,7 @@ model Habit {
   group               Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   category            String?  // health | learning | mindfulness | lifestyle | other
   streakShieldEnabled Boolean  @default(false)
+  isShared            Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -66,7 +67,7 @@ model CheckIn {
   completed Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  @@unique([habitId, date])
+  @@unique([habitId, userId, date])
   @@index([userId, date])
 }
 

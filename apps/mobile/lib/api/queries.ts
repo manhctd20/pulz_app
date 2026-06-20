@@ -185,6 +185,19 @@ export function useDeleteGroup() {
   });
 }
 
+export function useCreateSharedHabit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, dto }: { groupId: string; dto: CreateHabitDto }) =>
+      groupsApi.createSharedHabit(groupId, dto),
+    onSuccess: (_, { groupId }) => {
+      void qc.invalidateQueries({ queryKey: HABITS_KEY });
+      void qc.invalidateQueries({ queryKey: GROUPS_KEY });
+      void qc.invalidateQueries({ queryKey: GROUP_DETAIL_KEY(groupId) });
+    },
+  });
+}
+
 export function useLeaderboard(groupId: string | undefined, period: LeaderboardPeriod) {
   return useQuery({
     queryKey: groupId ? LEADERBOARD_KEY(groupId, period) : ['leaderboard', 'noop'],

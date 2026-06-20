@@ -144,9 +144,10 @@ Trên iPhone:
 
 ### Habits
 - Add Habit: emoji picker (9), color picker (5), frequency (daily/weekly), reminder HH:mm, chọn group, **category** (health/learning/mindfulness/lifestyle/other), **Streak Shield** toggle
-- Check-in idempotent theo ngày UTC (toggle on/off)
+- Check-in idempotent theo ngày UTC (toggle on/off) — unique key `(habitId, userId, date)` để hỗ trợ shared habit
 - Tự động tính streak (consecutive days). Khi Streak Shield bật, cho phép lỡ tối đa 1 ngày trong chuỗi mà streak không reset (mỗi chuỗi chỉ shield 1 lần)
 - Home filter chips theo category (chỉ render những category đang được dùng)
+- **Group habit (isShared)** — chủ nhóm tạo 1 habit qua `POST /groups/:id/habits`, habit tự xuất hiện trên Home của tất cả members; mỗi member có check-in/streak/history riêng nhưng cùng tham chiếu 1 habit record. Group Detail liệt kê "Habits chung" với số member đã hoàn thành hôm nay. Edit/Delete shared habit chỉ owner. Trên Home, shared habit có badge 👥
 
 ### Groups
 - Tạo nhóm với auto-gen code 6 ký tự (skip ký tự dễ nhầm I/O/0/1)
@@ -208,13 +209,14 @@ Project có **slash command custom** để smoke test toàn bộ BE + security +
 **Infrastructure (C0):**
 - Swagger reachable at `/docs` + `/docs-json` returns valid OpenAPI 3.0
 
-**Functional (22 checks):**
+**Functional (23 checks):**
 - C1-C4 Auth: login / me / refresh / reject wrong password
 - C4b PATCH /auth/me + change-password
 - C4c DELETE /auth/me cascade owned groups
 - **C4d Password reset**: forgot trả devToken (dev mode), reset đổi password thành công, token single-use (reuse → 400), forgot với email không tồn tại vẫn 200 (không leak)
 - C5-C8 Habits: list / create / checkin toggle 3 lần (idempotent) / delete / history 30 ngày
 - **C8c Category + Streak Shield**: round-trip create/patch giữ nguyên field, zod reject category invalid
+- **C8d Group habit (isShared)**: owner tạo shared habit qua POST /groups/:id/habits, member non-owner bị 403, Lan/Minh đều thấy habit qua GET /habits, check-in từng user lưu riêng (unique habitId+userId+date), delete shared chỉ owner
 - C9-C13 Groups: list / create với code 6 ký tự / Lan join + duplicate 409 / detail structure / Lan leave + Minh owner-can't-leave + delete / **rename owner-only** / **kick member owner-only**
 - C14 Leaderboard: 3 period với rank đúng
 - C15 Authz: 401 không token, 403 không phải member
@@ -325,11 +327,12 @@ Tất cả endpoint dùng prefix `/api/v1`. Auth bằng header `Authorization: B
 | GET | `/groups` | — | `GroupSummary[]` |
 | POST | `/groups` | `{name}` | `GroupSummary` |
 | POST | `/groups/join` | `{code}` | `GroupSummary` |
-| GET | `/groups/:id` | — | `GroupDetail` (members + sharedHabits) |
+| GET | `/groups/:id` | — | `GroupDetail` (members + sharedHabits chỉ `isShared=true`) |
 | PATCH | `/groups/:id` | `{name}` | `GroupSummary` (chỉ owner) |
 | POST | `/groups/:id/leave` | — | `{ok: true}` (owner không leave được) |
 | DELETE | `/groups/:id` | — | `{ok: true}` (chỉ owner) |
 | DELETE | `/groups/:id/members/:userId` | — | `{ok: true}` (kick, chỉ owner, không kick chính mình) |
+| POST | `/groups/:id/habits` | `CreateHabitDto` | `HabitWithStatus` (shared habit, chỉ owner, tự set `isShared=true`) |
 
 ### Leaderboard
 | Method | Path | Query | Response |
@@ -437,12 +440,13 @@ npx tsx prisma\seed.ts
 - **Redesign Profile + Leaderboard**: Profile hero gradient avatar + hero streak card + achievement gradient/locked states + setting icon bubbles; Leaderboard "Your rank" card với gap-to-leader, podium gold/silver/bronze (medal emoji 🥇🥈🥉 + #1 to hơn), rank list highlight user của mình
 - **Forgot / Reset password**: Prisma `PasswordResetToken` model (token + userId + expiresAt + usedAt + cascade delete on user), `EmailService` dùng Resend HTTP API (no SDK) với fallback log khi `RESEND_API_KEY` chưa set, screens `forgot-password` + `reset-password` với deep-link cùng token, route public + throttle (3/min forgot, 5/min reset), forgot luôn trả `ok: true` để không leak user existence
 - **Habit categories + Streak Shield**: Habit schema thêm `category` (enum 5: health/learning/mindfulness/lifestyle/other) + `streakShieldEnabled` (boolean), Add Habit form có chip picker category + Switch shield (kèm hint), `calcStreak` cho phép 1 ngày lỡ duy nhất trong chuỗi khi shield bật, Home thêm filter chips horizontal scroll trên habits section (chỉ hiển thị category đang dùng)
+- **Group habit assignment (isShared)**: Habit schema thêm `isShared` (boolean), `CheckIn` unique chuyển từ `(habitId, date)` → `(habitId, userId, date)` để mỗi member có 1 check-in/ngày trên cùng habit chung. Endpoint mới `POST /groups/:id/habits` (owner-only) tạo shared habit. `HabitsService.list(userId)` trả về union personal habits + shared habits trong các group user là member. Edit/Delete shared habit chỉ owner; check-in/history mở cho tất cả member. Group Detail "Habits chung" giờ filter theo `isShared=true` và đếm chính xác member done hôm nay. Home tự render shared habit kèm badge 👥. Owner thấy nút "+ Tạo habit chung" trong section Habits chung của Group Detail
 
 ### ⏳ Next (đề xuất, chưa cam kết)
 - **Avatar upload** (BE: presigned S3 URL hoặc Cloudinary; FE: image picker)
 - **Habit notes** (nhật ký mỗi check-in với 280 ký tự)
 - **Sharing stats**: chia sẻ heatmap habit qua Share API
-- **Group habit assignment**: chủ nhóm assign 1 habit chung cho cả nhóm
+- **Per-habit leaderboard**: ranking riêng theo từng shared habit (hiện tại leaderboard tổng theo group)
 - **Tests automation**: Jest unit cho service + Detox e2e cho FE
 - **CI/CD**: GitHub Actions chạy `/test-pulz` trên PR
 - **Deploy**: Railway/Render cho API, EAS build cho mobile

@@ -1,7 +1,9 @@
 import {
   CreateGroupDto,
+  CreateHabitDto,
   GroupDetailSchema,
   GroupSummarySchema,
+  HabitWithStatusSchema,
   JoinGroupDto,
   UpdateGroupDto,
 } from '@pulz/shared';
@@ -46,4 +48,9 @@ export async function updateGroup(id: string, dto: UpdateGroupDto) {
 
 export async function kickMember(groupId: string, userId: string) {
   await api.delete(`/groups/${groupId}/members/${userId}`);
+}
+
+export async function createSharedHabit(groupId: string, dto: CreateHabitDto) {
+  const { data } = await api.post(`/groups/${groupId}/habits`, dto);
+  return HabitWithStatusSchema.parse(data);
 }

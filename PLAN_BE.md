@@ -30,6 +30,8 @@
 | BE: Habit `category` enum (health/learning/mindfulness/lifestyle/other) + `streakShieldEnabled` flag, `calcStreak` cho phép 1 grace day khi shield bật | ✅ |
 | FE: Forgot-password + Reset-password screens (deep-link cùng token), Login → Forgot link | ✅ |
 | FE: Add Habit form thêm category chip picker + Streak Shield Switch; Home filter chips theo category (chỉ render category đang dùng) | ✅ |
+| BE: Habit `isShared` flag + `POST /groups/:id/habits` (owner-only). CheckIn unique đổi sang `(habitId, userId, date)`. HabitsService.list trả union personal + shared in user's groups. Edit/Delete shared = owner-only; check-in/history mở cho mọi member | ✅ |
+| FE: Group Detail "+ Tạo habit chung" button (owner-only) → add-habit `?sharedGroupId=`; HabitCard có badge 👥; shared habit hiện trên Home của mọi member | ✅ |
 | FE: API client axios + interceptor refresh | ✅ |
 | FE: React Query + auth state với SecureStore | ✅ |
 | FE: Login + Register screen | ✅ |
@@ -159,6 +161,36 @@ calcStreak(checkIns, today, shieldEnabled):
   Đếm ngược từ today, mỗi ngày có check-in → streak++
   Nếu shieldEnabled và streak > 0 và chưa shield + ngày đó không phải today → cho phép 1 ngày miss duy nhất
   Hết shield → break
+```
+
+Phase 9 (group habit assignment):
+```
+Schema:
+  Habit.isShared Boolean @default(false)
+  CheckIn unique  (habitId, userId, date)  -- thay (habitId, date)
+  Migration: 20260619000000_group_habit_shared
+
+POST /groups/:id/habits   body CreateHabitDto → HabitWithStatus
+  Bearer required, owner-only (404 nếu group không tồn tại, 403 nếu không phải owner)
+  Tự set isShared=true, groupId=:id, createdBy=ownerId
+
+GET /habits:
+  Trả union (h.userId == me AND !h.isShared) + (h.isShared AND h.groupId IN myGroups)
+  Per-habit check-in filter where userId=me → streak/doneToday tính chính xác per-user
+
+POST /habits/:id/checkin  (đã có)
+  Authz mới: nếu habit.isShared → cần là member của habit.groupId
+            ngược lại → cần là owner habit
+  Lưu CheckIn { habitId, userId, date }
+
+DELETE /habits/:id, PATCH /habits/:id:
+  Authz: shared habit → chỉ group owner; personal → chỉ owner habit
+
+GET /groups/:id detail:
+  sharedHabits chỉ filter isShared=true; mỗi habit doneCount = số userId distinct
+    đã check-in completed=true hôm nay (trong member set của group)
+  Member.todayDone count tăng nếu member đã check-in vào 1 trong các shared habits +
+    personal habits với groupId trùng
 ```
 
 ---
