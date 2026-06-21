@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Habit, CheckIn } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { PushService } from '../push/push.service';
 import { CreateHabitDto, UpdateHabitDto } from './dto';
 
 function todayUtc(): Date {
@@ -73,7 +74,10 @@ function serializeHabit(h: Habit, doneToday: boolean, currentStreak: number) {
 
 @Injectable()
 export class HabitsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private push: PushService,
+  ) {}
 
   async list(userId: string) {
     const today = todayUtc();
@@ -189,16 +193,21 @@ export class HabitsService {
     const start = addDays(today, -(limit - 1));
     const checkIns = await this.prisma.checkIn.findMany({
       where: { habitId, userId, date: { gte: start } },
-      select: { date: true, completed: true },
+      select: { date: true, completed: true, note: true },
     });
-    const doneSet = new Set(
-      checkIns.filter((c) => c.completed).map((c) => c.date.toISOString().slice(0, 10)),
+    const byDate = new Map(
+      checkIns.map((c) => [c.date.toISOString().slice(0, 10), c]),
     );
-    const entries: { date: string; completed: boolean }[] = [];
+    const entries: { date: string; completed: boolean; note: string | null }[] = [];
     for (let i = 0; i < limit; i++) {
       const d = addDays(start, i);
       const key = d.toISOString().slice(0, 10);
-      entries.push({ date: key, completed: doneSet.has(key) });
+      const c = byDate.get(key);
+      entries.push({
+        date: key,
+        completed: !!c?.completed,
+        note: c?.note ?? null,
+      });
     }
 
     const currentStreak = calcStreak(checkIns, today, habit.streakShieldEnabled);
@@ -216,7 +225,7 @@ export class HabitsService {
     return { habitId, days: limit, entries, currentStreak, longestStreak, totalDone };
   }
 
-  async toggleCheckIn(userId: string, habitId: string) {
+  async toggleCheckIn(userId: string, habitId: string, note?: string) {
     const habit = await this.assertCanCheck(userId, habitId);
     const today = todayUtc();
 
@@ -224,15 +233,18 @@ export class HabitsService {
       where: { habitId_userId_date: { habitId, userId, date: today } },
     });
 
+    let resultNote: string | null = null;
     if (existing) {
-      await this.prisma.checkIn.update({
+      const updated = await this.prisma.checkIn.update({
         where: { habitId_userId_date: { habitId, userId, date: today } },
-        data: { completed: !existing.completed },
+        data: { completed: !existing.completed, note: note ?? existing.note },
       });
+      resultNote = updated.note;
     } else {
-      await this.prisma.checkIn.create({
-        data: { habitId, userId, date: today, completed: true },
+      const created = await this.prisma.checkIn.create({
+        data: { habitId, userId, date: today, completed: true, note: note ?? null },
       });
+      resultNote = created.note;
     }
 
     const checkIns = await this.prisma.checkIn.findMany({
@@ -244,12 +256,47 @@ export class HabitsService {
     const doneToday = checkIns.some(
       (c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey,
     );
+
+    // Nếu là shared habit và user vừa hoàn thành → push notify members khác.
+    if (habit.isShared && habit.groupId && doneToday && !existing?.completed) {
+      void this.notifySharedCheckIn(habit.id, habit.name, habit.emoji, habit.groupId, userId);
+    }
+
     return {
       habitId,
       date: todayKey,
       done: doneToday,
       currentStreak: streak,
+      note: resultNote,
     };
+  }
+
+  private async notifySharedCheckIn(
+    habitId: string,
+    habitName: string,
+    habitEmoji: string,
+    groupId: string,
+    actorUserId: string,
+  ) {
+    const [actor, members] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: actorUserId },
+        select: { displayName: true },
+      }),
+      this.prisma.groupMember.findMany({
+        where: { groupId, userId: { not: actorUserId } },
+        select: { userId: true },
+      }),
+    ]);
+    if (!actor || members.length === 0) return;
+    await this.push.sendToUsers(
+      members.map((m) => m.userId),
+      {
+        title: `${habitEmoji} ${actor.displayName} vừa check-in`,
+        body: `"${habitName}" — đến lượt bạn rồi!`,
+        data: { type: 'shared-checkin', habitId, groupId },
+      },
+    );
   }
 
   private async assertCanCheck(userId: string, habitId: string): Promise<Habit> {

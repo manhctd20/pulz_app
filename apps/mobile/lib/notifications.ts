@@ -1,7 +1,9 @@
 import type { HabitWithStatus } from '@pulz/shared';
+import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { api } from './api/client';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 const SCHEDULED_PREFIX = 'pulz-habit-';
@@ -39,6 +41,33 @@ export async function cancelAllHabitReminders(): Promise<void> {
       .filter((n) => typeof n.identifier === 'string' && n.identifier.startsWith(SCHEDULED_PREFIX))
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
+}
+
+// Gọi sau khi user login → lấy Expo push token + đăng ký lên BE.
+// Idempotent: BE chỉ update nếu token thay đổi.
+export async function registerPushTokenWithBackend(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const granted = await ensureNotificationPermission();
+    if (!granted) return;
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      (Constants.easConfig as { projectId?: string } | undefined)?.projectId;
+    if (!projectId) return;
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (!token) return;
+    await api.post('/push/token', { token });
+  } catch {
+    // Im lặng — push không phải critical path.
+  }
+}
+
+export async function unregisterPushTokenWithBackend(): Promise<void> {
+  try {
+    await api.delete('/push/token');
+  } catch {
+    // Im lặng.
+  }
 }
 
 export async function syncHabitReminders(habits: HabitWithStatus[]): Promise<void> {

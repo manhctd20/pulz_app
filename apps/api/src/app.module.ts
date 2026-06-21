@@ -9,6 +9,7 @@ import { GroupsModule } from './groups/groups.module';
 import { HabitsModule } from './habits/habits.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { PushModule } from './push/push.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PrismaModule } from './prisma/prisma.module';
     HabitsModule,
     GroupsModule,
     LeaderboardModule,
+    PushModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

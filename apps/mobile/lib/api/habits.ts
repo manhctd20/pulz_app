@@ -30,8 +30,9 @@ export async function deleteHabit(id: string) {
   await api.delete(`/habits/${id}`);
 }
 
-export async function toggleCheckIn(id: string) {
-  const { data } = await api.post(`/habits/${id}/checkin`);
+export async function toggleCheckIn(id: string, note?: string) {
+  const body = note !== undefined ? { note } : {};
+  const { data } = await api.post(`/habits/${id}/checkin`, body);
   return CheckInResponseSchema.parse(data);
 }
 

@@ -51,17 +51,24 @@ export type CreateHabitDto = z.infer<typeof CreateHabitDtoSchema>;
 export const UpdateHabitDtoSchema = CreateHabitDtoSchema.partial();
 export type UpdateHabitDto = z.infer<typeof UpdateHabitDtoSchema>;
 
+export const CheckInDtoSchema = z.object({
+  note: z.string().max(280).optional(),
+});
+export type CheckInDto = z.infer<typeof CheckInDtoSchema>;
+
 export const CheckInResponseSchema = z.object({
   habitId: z.string(),
   date: z.string(),
   done: z.boolean(),
   currentStreak: z.number().int().nonnegative(),
+  note: z.string().nullable().optional(),
 });
 export type CheckInResponse = z.infer<typeof CheckInResponseSchema>;
 
 export const HabitHistoryEntrySchema = z.object({
   date: z.string(),
   completed: z.boolean(),
+  note: z.string().nullable().optional(),
 });
 export type HabitHistoryEntry = z.infer<typeof HabitHistoryEntrySchema>;
 

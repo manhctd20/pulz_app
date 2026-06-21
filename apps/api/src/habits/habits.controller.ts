@@ -15,7 +15,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.types';
-import { CreateHabitDto, UpdateHabitDto } from './dto';
+import { CheckInDto, CreateHabitDto, UpdateHabitDto } from './dto';
 import { HabitsService } from './habits.service';
 
 @ApiTags('habits')
@@ -55,9 +55,13 @@ export class HabitsController {
 
   @Post(':id/checkin')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Toggle check-in hôm nay (idempotent theo ngày UTC)' })
-  checkIn(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.habits.toggleCheckIn(user.sub, id);
+  @ApiOperation({ summary: 'Toggle check-in hôm nay (idempotent theo ngày UTC) + note tuỳ chọn' })
+  checkIn(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: CheckInDto,
+  ) {
+    return this.habits.toggleCheckIn(user.sub, id, dto?.note);
   }
 
   @Get(':id/history')

@@ -3,6 +3,10 @@ import { create } from 'zustand';
 
 import * as authApi from '../lib/api/auth';
 import { getStoredTokens, setStoredTokens } from '../lib/api/tokenStorage';
+import {
+  registerPushTokenWithBackend,
+  unregisterPushTokenWithBackend,
+} from '../lib/notifications';
 import { queryClient } from '../lib/queryClient';
 
 type Status = 'loading' | 'unauthenticated' | 'authenticated';
@@ -32,6 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const user = await authApi.me();
       set({ status: 'authenticated', user });
+      void registerPushTokenWithBackend();
     } catch {
       await setStoredTokens(null);
       set({ status: 'unauthenticated', user: null });
@@ -41,9 +46,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     const res = await authApi.login({ email, password });
     await setStoredTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
-    // Xoá cache user cũ trước khi set user mới, tránh leak data sang account khác.
     queryClient.clear();
     set({ status: 'authenticated', user: res.user });
+    void registerPushTokenWithBackend();
   },
 
   register: async (email, password, displayName) => {
@@ -51,9 +56,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     await setStoredTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
     queryClient.clear();
     set({ status: 'authenticated', user: res.user });
+    void registerPushTokenWithBackend();
   },
 
   logout: async () => {
+    await unregisterPushTokenWithBackend();
     await setStoredTokens(null);
     queryClient.clear();
     set({ status: 'unauthenticated', user: null });

@@ -30,8 +30,9 @@ export function useHabits() {
 export function useToggleCheckIn() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (habitId: string) => habitsApi.toggleCheckIn(habitId),
-    onMutate: async (habitId: string) => {
+    mutationFn: ({ habitId, note }: { habitId: string; note?: string }) =>
+      habitsApi.toggleCheckIn(habitId, note),
+    onMutate: async ({ habitId }) => {
       await qc.cancelQueries({ queryKey: HABITS_KEY });
       const prev = qc.getQueryData<HabitWithStatus[]>(HABITS_KEY);
       if (prev) {
@@ -52,12 +53,13 @@ export function useToggleCheckIn() {
       }
       return { prev };
     },
-    onError: (_err, _id, ctx) => {
+    onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(HABITS_KEY, ctx.prev);
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: HABITS_KEY });
       void qc.invalidateQueries({ queryKey: GROUPS_KEY });
+      void qc.invalidateQueries({ queryKey: ['habit-history'] });
     },
   });
 }

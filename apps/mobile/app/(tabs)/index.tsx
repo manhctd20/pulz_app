@@ -61,7 +61,7 @@ export default function HomeScreen() {
   const onToggleHabit = (habitId: string, wasDone: boolean) => {
     if (wasDone) hapticTap();
     else hapticSuccess();
-    toggleMutation.mutate(habitId);
+    toggleMutation.mutate({ habitId });
   };
 
   return (

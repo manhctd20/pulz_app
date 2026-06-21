@@ -110,7 +110,11 @@
     "totalDone": "Số ngày hoàn thành",
     "heatmapTitle": "Lịch check-in",
     "edit": "Sửa thói quen",
-    "dayShort": "T"
+    "dayShort": "T",
+    "todayNoteTitle": "Nhật ký hôm nay",
+    "todayNotePlaceholder": "Ghi lại cảm xúc, năng lượng, hoặc note gì đó về habit hôm nay...",
+    "noteSaved": "Đã lưu ghi chú",
+    "notesHistoryTitle": "Nhật ký gần đây"
   },
   "leaderboard": {
     "title": "Bảng xếp hạng",
@@ -133,7 +137,17 @@
     "title": "Cùng nhau giữ thói quen tốt",
     "subtitle": "Tạo thử thách với bạn bè, check-in mỗi ngày và leo top bảng xếp hạng. Vui hơn khi làm cùng nhau!",
     "primaryCta": "Bắt đầu",
-    "secondaryCta": "Đã có tài khoản? Đăng nhập"
+    "secondaryCta": "Đã có tài khoản? Đăng nhập",
+    "skip": "Bỏ qua",
+    "next": "Tiếp theo",
+    "s1Title": "Giữ thói quen tốt mỗi ngày",
+    "s1Subtitle": "Tạo các thói quen cá nhân, check-in mỗi ngày và nuôi chuỗi streak. Càng giữ lâu, càng tự hào.",
+    "s2Title": "Tạo habit của bạn",
+    "s2Subtitle": "Chọn emoji, đặt nhắc giờ và phân loại — bật Streak Shield để không lỡ một ngày cũng không reset.",
+    "s3Title": "Rủ bạn bè vào nhóm",
+    "s3Subtitle": "Tạo nhóm bằng mã mời 6 ký tự. Chủ nhóm gán habit chung — cả team cùng check-in cùng nhau.",
+    "s4Title": "Leo top bảng xếp hạng",
+    "s4Subtitle": "Hôm nay, tuần này, hay tất cả thời gian — ai sẽ là người dẫn đầu? Bắt đầu thôi!"
   },
   "profile": {
     "title": "Trang cá nhân",

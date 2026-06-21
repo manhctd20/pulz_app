@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -8,14 +8,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useToast } from '../../components/Toast';
 import type { ColorPalette } from '../../constants/colors';
 import { Radius, Spacing } from '../../constants/spacing';
 import { FontFamily, Typography } from '../../constants/typography';
-import { useHabitHistory, useHabits } from '../../lib/api/queries';
+import { useHabitHistory, useHabits, useToggleCheckIn } from '../../lib/api/queries';
+import { hapticSuccess } from '../../lib/haptics';
 import { useColors } from '../../lib/theme';
 
 const DAYS = 30;
@@ -31,6 +34,11 @@ export default function HabitDetailScreen() {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
+  const toggleMutation = useToggleCheckIn();
+  const toast = useToast();
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteHydrated, setNoteHydrated] = useState(false);
+
   const habit = useMemo(() => habits.data?.find((h) => h.id === id), [habits.data, id]);
 
   // Nếu habits đã load xong mà không tìm thấy habit (vd vừa xoá) → tự back về.
@@ -39,6 +47,14 @@ export default function HabitDetailScreen() {
       router.back();
     }
   }, [habits.isLoading, habits.data, habit]);
+
+  const todayEntry = historyQuery.data?.entries[historyQuery.data.entries.length - 1];
+  useEffect(() => {
+    if (!noteHydrated && todayEntry) {
+      setNoteDraft(todayEntry.note ?? '');
+      setNoteHydrated(true);
+    }
+  }, [noteHydrated, todayEntry]);
 
   if (historyQuery.isLoading || habits.isLoading || !habit) {
     return (
@@ -136,6 +152,63 @@ export default function HabitDetailScreen() {
             </Text>
           </View>
         </View>
+
+        <View style={styles.section}>
+          <Text style={Typography.title}>{t('habitDetail.todayNoteTitle')}</Text>
+          <TextInput
+            value={noteDraft}
+            onChangeText={(v) => setNoteDraft(v.slice(0, 280))}
+            placeholder={t('habitDetail.todayNotePlaceholder')}
+            placeholderTextColor={colors.text.muted}
+            style={styles.noteInput}
+            multiline
+            maxLength={280}
+          />
+          <View style={styles.noteFooter}>
+            <Text style={[Typography.bodySm, { color: colors.text.muted }]}>
+              {noteDraft.length}/280
+            </Text>
+            <Pressable
+              onPress={() => {
+                if (!habit) return;
+                toggleMutation.mutate(
+                  { habitId: habit.id, note: noteDraft },
+                  {
+                    onSuccess: () => {
+                      hapticSuccess();
+                      toast.show(t('habitDetail.noteSaved'), 'success');
+                    },
+                  },
+                );
+              }}
+              disabled={toggleMutation.isPending}
+              style={[styles.noteSaveBtn, toggleMutation.isPending && { opacity: 0.6 }]}
+            >
+              <Text style={styles.noteSaveText}>{t('common.save')}</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {(h.entries.some((e) => e.note) || false) && (
+          <View style={styles.section}>
+            <Text style={Typography.title}>{t('habitDetail.notesHistoryTitle')}</Text>
+            <View style={styles.notesList}>
+              {h.entries
+                .filter((e) => !!e.note)
+                .reverse()
+                .map((e, i) => (
+                  <View key={`${e.date}-${i}`} style={styles.noteRow}>
+                    <Text style={[Typography.label, { color: colors.text.muted }]}>
+                      {e.date.slice(5)}
+                    </Text>
+                    <Text style={[Typography.bodySm, { color: colors.text.primary }]}>
+                      {e.note}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          </View>
+        )}
 
         <Pressable
           onPress={() => router.push(`/add-habit?habitId=${habit.id}`)}
@@ -246,6 +319,39 @@ function makeStyles(c: ColorPalette) {
       fontSize: 16,
       color: '#FFFFFF',
       letterSpacing: 0.3,
+    },
+    noteInput: {
+      backgroundColor: c.surface.container,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      minHeight: 80,
+      color: c.text.primary,
+      fontFamily: FontFamily.beVietnam.regular,
+      fontSize: 14,
+      textAlignVertical: 'top',
+    },
+    noteFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    noteSaveBtn: {
+      backgroundColor: c.primary,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: 8,
+      borderRadius: Radius.full,
+    },
+    noteSaveText: {
+      fontFamily: FontFamily.manrope.bold,
+      color: '#FFFFFF',
+      fontSize: 13,
+    },
+    notesList: { gap: Spacing.sm },
+    noteRow: {
+      backgroundColor: c.surface.container,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      gap: 4,
     },
   });
 }

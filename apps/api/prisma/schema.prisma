@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  displayName  String
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  displayName    String
+  avatarUrl      String?
+  expoPushToken  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   habits         Habit[]
   memberships    GroupMember[]
@@ -65,6 +66,7 @@ model CheckIn {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime @db.Date
   completed Boolean  @default(true)
+  note      String?
   createdAt DateTime @default(now())
 
   @@unique([habitId, userId, date])

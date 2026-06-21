@@ -110,7 +110,11 @@
     "totalDone": "Days completed",
     "heatmapTitle": "Check-in calendar",
     "edit": "Edit habit",
-    "dayShort": "D"
+    "dayShort": "D",
+    "todayNoteTitle": "Today's note",
+    "todayNotePlaceholder": "Jot down how it felt, mood, energy, or any thought about this habit today...",
+    "noteSaved": "Note saved",
+    "notesHistoryTitle": "Recent notes"
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -133,7 +137,17 @@
     "title": "Build good habits together",
     "subtitle": "Create challenges with friends, check in daily and climb the leaderboard. More fun when done together!",
     "primaryCta": "Get started",
-    "secondaryCta": "Have an account? Sign in"
+    "secondaryCta": "Have an account? Sign in",
+    "skip": "Skip",
+    "next": "Next",
+    "s1Title": "Build good habits daily",
+    "s1Subtitle": "Create personal habits, check in every day, and grow your streak. The longer you keep it, the prouder you'll be.",
+    "s2Title": "Create your habits",
+    "s2Subtitle": "Pick an emoji, set a reminder time and category — enable Streak Shield so a missed day doesn't reset your run.",
+    "s3Title": "Invite friends to a group",
+    "s3Subtitle": "Create a group with a 6-char invite code. The owner pins shared habits — the whole team checks in together.",
+    "s4Title": "Climb the leaderboard",
+    "s4Subtitle": "Today, this week, or all time — who's at the top? Let's go!"
   },
   "profile": {
     "title": "Profile",
