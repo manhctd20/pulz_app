@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -33,7 +33,14 @@ export default function HabitDetailScreen() {
 
   const habit = useMemo(() => habits.data?.find((h) => h.id === id), [habits.data, id]);
 
-  if (historyQuery.isLoading || !habit) {
+  // Nếu habits đã load xong mà không tìm thấy habit (vd vừa xoá) → tự back về.
+  useEffect(() => {
+    if (!habits.isLoading && habits.data && !habit) {
+      router.back();
+    }
+  }, [habits.isLoading, habits.data, habit]);
+
+  if (historyQuery.isLoading || habits.isLoading || !habit) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>

@@ -130,7 +130,8 @@ export default function AddHabitScreen() {
         onPress: async () => {
           try {
             await deleteMutation.mutateAsync(editingId);
-            router.back();
+            // Replace về tab Home — tránh quay về detail của habit vừa xoá.
+            router.replace('/(tabs)');
           } catch (e: any) {
             setError(e?.message ?? 'Error');
           }

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -115,6 +115,13 @@ function CreateGroupModal({ visible, onClose }: { visible: boolean; onClose: () 
   const [error, setError] = useState<string | null>(null);
   const mutation = useCreateGroup();
 
+  useEffect(() => {
+    if (!visible) {
+      setName('');
+      setError(null);
+    }
+  }, [visible]);
+
   const onSubmit = async () => {
     setError(null);
     try {
@@ -177,6 +184,13 @@ function JoinGroupModal({ visible, onClose }: { visible: boolean; onClose: () =>
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const mutation = useJoinGroup();
+
+  useEffect(() => {
+    if (!visible) {
+      setCode('');
+      setError(null);
+    }
+  }, [visible]);
 
   const onSubmit = async () => {
     setError(null);

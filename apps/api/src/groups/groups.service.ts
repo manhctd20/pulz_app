@@ -158,9 +158,10 @@ export class GroupsService {
     });
     const memberIds = memberships.map((m) => m.userId);
 
-    // Mọi habit gắn groupId (personal hoặc shared) + check-ins 60 ngày của các member.
+    // Chỉ lấy shared habits của group — personal habits dù gắn groupId là việc cá nhân,
+    // không tính vào stats nhóm để tránh confuse (1 thói quen chung mà đếm thành 5).
     const groupHabits = await this.prisma.habit.findMany({
-      where: { groupId },
+      where: { groupId, isShared: true },
       include: {
         checkIns: {
           where: { userId: { in: memberIds }, date: { gte: addDays(today, -60) } },
@@ -172,16 +173,10 @@ export class GroupsService {
     const todayKey = today.toISOString().slice(0, 10);
 
     const members = memberships.map((m) => {
-      const personalHabits = groupHabits.filter(
-        (h) => !h.isShared && h.userId === m.userId,
-      );
-      const sharedHabits = groupHabits.filter((h) => h.isShared);
-      const myHabits = [...personalHabits, ...sharedHabits];
-
       const totalDates = new Set<string>();
       let todayDone = 0;
-      const todayTotal = myHabits.length;
-      for (const h of myHabits) {
+      const todayTotal = groupHabits.length;
+      for (const h of groupHabits) {
         const myCheckIns = h.checkIns.filter((c) => c.userId === m.userId);
         if (myCheckIns.some((c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey)) {
           todayDone++;
@@ -212,22 +207,20 @@ export class GroupsService {
     });
 
     const memberCount = members.length;
-    const sharedHabits = groupHabits
-      .filter((h) => h.isShared)
-      .map((h) => {
-        const doneUserIds = new Set(
-          h.checkIns
-            .filter((c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey)
-            .map((c) => c.userId),
-        );
-        return {
-          id: h.id,
-          name: h.name,
-          emoji: h.emoji,
-          doneCount: doneUserIds.size,
-          totalMembers: memberCount,
-        };
-      });
+    const sharedHabits = groupHabits.map((h) => {
+      const doneUserIds = new Set(
+        h.checkIns
+          .filter((c) => c.completed && c.date.toISOString().slice(0, 10) === todayKey)
+          .map((c) => c.userId),
+      );
+      return {
+        id: h.id,
+        name: h.name,
+        emoji: h.emoji,
+        doneCount: doneUserIds.size,
+        totalMembers: memberCount,
+      };
+    });
 
     return { ...summary, members, sharedHabits };
   }
@@ -247,15 +240,15 @@ export class GroupsService {
 
     const today = todayUtc();
     const memberCount = group._count.members;
-    const habits = await this.prisma.habit.findMany({
-      where: { groupId },
+    const sharedHabits = await this.prisma.habit.findMany({
+      where: { groupId, isShared: true },
       include: { checkIns: { where: { date: today }, select: { completed: true } } },
     });
-    const todayCheckIns = habits.reduce(
+    const todayCheckIns = sharedHabits.reduce(
       (sum, h) => sum + h.checkIns.filter((c) => c.completed).length,
       0,
     );
-    const todayTotal = habits.reduce((sum, h) => sum + (h.isShared ? memberCount : 1), 0);
+    const todayTotal = sharedHabits.length * memberCount;
 
     return {
       id: group.id,
@@ -263,7 +256,7 @@ export class GroupsService {
       name: group.name,
       ownerId: group.ownerId,
       memberCount: group._count.members,
-      habitCount: group._count.habits,
+      habitCount: sharedHabits.length,
       todayCheckIns,
       todayTotal,
       memberPreviews: group.members.map((m) => ({

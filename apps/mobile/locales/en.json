@@ -80,7 +80,8 @@
     "joinCodeLabel": "6-char code",
     "joinCodePlaceholder": "ABCDEF",
     "inviteCode": "Invite code: {{code}}",
-    "codeCopied": "Code copied"
+    "codeCopied": "Code copied",
+    "groupCountSuffix": "groups"
   },
   "groupDetail": {
     "membersTitle": "Members",
@@ -141,6 +142,7 @@
     "statsLongestStreak": "Longest streak",
     "statsHabitCount": "Habits",
     "statsRank": "Group rank",
+    "statsGroups": "Groups joined",
     "achievementsTitle": "Achievements",
     "achievementStreak7": "7-day streak",
     "achievementHabit5": "5 habits",

@@ -64,7 +64,13 @@ export default function ProfileScreen() {
 
   const longestStreak = habitList.reduce((m, h) => Math.max(m, h.currentStreak), 0);
   const habitCount = habitList.length;
-  const firstGroupName = groupList[0]?.name ?? '—';
+  const groupCount = groupList.length;
+  const groupSummaryLabel =
+    groupCount === 0
+      ? '—'
+      : groupCount === 1
+        ? groupList[0]!.name
+        : `${groupCount} ${t('groups.groupCountSuffix')}`;
 
   const joinedMonth = formatJoinedMonth(user?.createdAt, language);
 
@@ -211,10 +217,10 @@ export default function ProfileScreen() {
             <View style={styles.smallStat}>
               <Text style={{ fontSize: 18 }}>👥</Text>
               <Text style={[Typography.bodyLgMedium, styles.smallStatGroup]} numberOfLines={1}>
-                {firstGroupName}
+                {groupSummaryLabel}
               </Text>
               <Text style={[Typography.label, { color: colors.text.muted }]}>
-                {t('profile.statsRank')}
+                {t('profile.statsGroups')}
               </Text>
             </View>
           </View>

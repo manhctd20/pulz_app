@@ -80,7 +80,8 @@
     "joinCodeLabel": "Mã 6 ký tự",
     "joinCodePlaceholder": "ABCDEF",
     "inviteCode": "Mã mời: {{code}}",
-    "codeCopied": "Đã sao chép mã"
+    "codeCopied": "Đã sao chép mã",
+    "groupCountSuffix": "nhóm"
   },
   "groupDetail": {
     "membersTitle": "Thành viên",
@@ -141,6 +142,7 @@
     "statsLongestStreak": "Streak dài nhất",
     "statsHabitCount": "Thói quen",
     "statsRank": "Hạng nhóm",
+    "statsGroups": "Nhóm tham gia",
     "achievementsTitle": "Thành tích",
     "achievementStreak7": "7 ngày liên tiếp",
     "achievementHabit5": "Đủ 5 thói quen",
